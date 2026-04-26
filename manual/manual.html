@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual de Usuario - Inventario Pro</title>
+    <style>
+        /* ==================================== */
+        /* PALETA DE COLORES Y VARIABLES GLOBALES */
+        /* ==================================== */
+        :root {
+            --color-principal: #059669; /* Verde Esmeralda Oscuro */
+            --color-secundario: #10b981; /* Verde Esmeralda Claro para acentos */
+            --color-fondo-seccion: #ecfdf5; /* Verde muy claro */
+            --color-texto: #1f2937; /* Gris muy oscuro */
+            --color-borde: #e5e7eb;
+        }
+
+        /* ==================================== */
+        /* ESTILOS DE PANTALLA (WEB) */
+        /* ==================================== */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f3f4f6;
+            color: var(--color-texto);
+        }
+        .container {
+            width: 90%;
+            max-width: 900px;
+            margin: 30px auto;
+            background-color: #ffffff;
+            padding: 50px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* TÍTULOS */
+        h1 {
+            color: var(--color-principal);
+            text-align: center;
+            border-bottom: 5px solid var(--color-principal);
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+        h2 {
+            background-color: var(--color-fondo-seccion);
+            color: var(--color-principal);
+            padding: 15px 20px;
+            margin-top: 40px;
+            border-left: 8px solid var(--color-secundario);
+            font-size: 1.6em;
+            font-weight: 600;
+        }
+        h3 {
+            color: var(--color-principal);
+            margin-top: 25px;
+            font-size: 1.25em;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+        }
+        h3::before {
+            content: "◆"; 
+            color: var(--color-secundario);
+            margin-right: 10px;
+            font-size: 0.8em;
+        }
+
+        /* TEXTO Y LISTAS */
+        p, li {
+            line-height: 1.7;
+            font-size: 1.05em;
+            text-align: justify;
+        }
+        
+        /* ELEMENTOS ESPECIALES */
+        code {
+            background-color: #f1f5f9;
+            color: var(--color-principal);
+            padding: 2px 5px;
+            border-radius: 4px;
+            font-family: 'Consolas', monospace;
+            font-weight: bold;
+        }
+        .note {
+            border-left: 5px solid #fbbf24;
+            background-color: #fffbeb;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .role-box {
+            border: 1px solid var(--color-borde);
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        
+        /* ==================================== */
+        /* ESTILOS PARA IMPRESIÓN (SIN CORTES) */
+        /* ==================================== */
+        @media print {
+            body {
+                background-color: #fff !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                font-size: 12pt;
+            }
+            .container {
+                width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                border: none !important;
+                box-shadow: none !important;
+            }
+            .no-break-inside {
+                page-break-inside: avoid !important;
+            }
+            h2, h3 {
+                page-break-after: avoid !important;
+                page-break-inside: avoid !important;
+            }
+            @page {
+                size: A4;
+                margin: 0.75in;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>MANUAL DE USUARIO DETALLADO</h1>
+        <p style="text-align: center; font-style: italic; color: var(--color-principal);"><strong>Sistema de Gestión de Inventario Pro</strong></p>
+
+        <hr style="border-top: 1px dashed var(--color-borde); margin: 30px 0;">
+
+        <h2>1. Introducción y Propósito</h2>
+        <p><strong>Inventario Pro</strong> es un sistema integral moderno, diseñado con tecnología FlatLaf (Dark Mode), que centraliza la administración operativa y financiera de tu negocio. El sistema permite gestionar un catálogo de productos multimoneda, llevar control de stock, emitir facturación y procesar reportes en tiempo real.</p>
+
+        <h2>2. Acceso y Perfiles de Usuario</h2>
+        
+        <div class="no-break-inside">
+            <h3>Inicio de Sesión</h3>
+            <p>Al ejecutar el sistema, serás recibido por la pantalla de inicio de sesión segura. Deberás ingresar tu <code>Correo Electrónico</code> y <code>Contraseña</code>.</p>
+
+            <h3>Perfiles de Acceso (Roles)</h3>
+            <p>El sistema protege la información confidencial mediante un esquema de roles asignados desde la creación de cada usuario:</p>
+            
+            <div class="role-box">
+                <h4>👑 Administrador</h4>
+                <p>Posee control total del sistema. Puede configurar la Tasa de Cambio, crear nuevos usuarios, eliminar registros importantes y ver historiales globales y reportes.</p>
+            </div>
+            
+            <div class="role-box">
+                <h4>👤 Usuario Estándar</h4>
+                <p>Acceso diseñado para cajeros y personal de almacén. Permite registrar ventas, visualizar productos y modificar el stock, pero restringe la alteración de configuraciones críticas o la gestión de usuarios.</p>
+            </div>
+        </div>
+        
+        <h2>3. Dashboard Principal (Inicio)</h2>
+        <p>Una vez dentro del sistema, el **Dashboard** funge como tu central de métricas operacionales. Ofrece información al instante:</p>
+        <ul>
+            <li><strong>Métricas Generales:</strong> Tarjetas superiores con el conteo de Productos Totales, Clientes Registrados, Productos con Stock Bajo y las Ventas del Mes.</li>
+            <li><strong>Gráficas en Vivo:</strong> Un gráfico de barras interactivo que clasifica el *Top 5 de Productos con Mayor Stock*.</li>
+            <li><strong>Alertas de Stock:</strong> Una tabla dedicada que muestra los productos cuyo stock actual ha caído por debajo de su límite de emergencia o *Stock Mínimo*.</li>
+        </ul>
+
+        <h2>4. Gestión de Catálogo y Sistema Multimoneda</h2>
+        
+        <div class="no-break-inside">
+            <h3>Módulo de Productos</h3>
+            <p>Desde este panel podrás visualizar todo tu inventario. Cuenta con una barra de búsqueda rápida por <strong>SKU</strong> o <strong>Nombre</strong>.</p>
+            <ul>
+                <li><strong>Precio Multimoneda Dinámico:</strong> Al registrar o visualizar un producto, el sistema muestra su precio tanto en <strong>Dólares (USD)</strong> como en <strong>Bolívares (VES)</strong>.</li>
+                <li><strong>Cálculo Automático:</strong> Durante la creación/edición de un producto, al escribir el precio en USD, una etiqueta verde mostrará instantáneamente la conversión exacta calculada con la Tasa de Cambio activa.</li>
+            </ul>
+            
+            <h3>Módulo de Categorías</h3>
+            <p>Permite agrupar los artículos (ej. Herramientas, Víveres, Electrónica). Cada producto debe enlazarse obligatoriamente a una de estas categorías para mantener el orden.</p>
+        </div>
+
+        <h2>5. Operaciones de Inventario y Movimientos</h2>
+        <p>El módulo <strong>Inventario</strong> es el corazón de la logística. Ningún producto cambia su cantidad mágicamente; todo requiere un movimiento rastreable:</p>
+        <ol>
+            <li><strong>Entrada:</strong> Se suma stock (por ejemplo, al recibir mercancía de un proveedor).</li>
+            <li><strong>Salida:</strong> Se resta stock (utilizado para mermas o despachos manuales).</li>
+            <li><strong>Ajuste:</strong> Reemplaza el stock actual por un número exacto tras un inventario físico.</li>
+        </ol>
+
+        <h2>6. Facturación y Ventas</h2>
+        <div class="no-break-inside">
+            <p>El panel de <strong>Facturación</strong> es ideal para la atención al cliente:</p>
+            <ul>
+                <li><strong>Panel de Compra:</strong> Busca y añade productos al carrito. El sistema suma automáticamente los montos y previene vender productos cuya cantidad solicitada sea superior al stock existente.</li>
+                <li><strong>Vínculo con Cliente:</strong> Permite seleccionar a un cliente previamente guardado en el <em>Módulo Clientes</em>.</li>
+                <li><strong>Cierre de Factura:</strong> Al procesar la venta, el sistema reduce automáticamente el stock del inventario y registra las ganancias del día.</li>
+            </ul>
+        </div>
+
+        <h2>7. Configuración General</h2>
+        <div class="note">
+            <p style="margin: 0;"><strong>Moneda y Tasa de Cambio:</strong> En el panel de <strong>Configuración</strong>, puedes ajustar la Tasa de Cambio (Bolívares por Dólar). Al actualizar este valor, ¡todos los precios mostrados en Bolívares en el sistema se actualizarán inmediatamente a nivel global!</p>
+        </div>
+        <p>Aquí también es posible modificar datos fiscales del negocio (Nombre de Empresa, RIF, Teléfono) que se imprimen en los reportes o facturas.</p>
+
+        <h2>8. Reportes y Respaldo</h2>
+        <p>Finalmente, el sistema provee herramientas de auditoría:</p>
+        <ul>
+            <li><strong>Reportes en Excel:</strong> Genera planillas descargables de Ventas, Clientes o Inventario, perfectas para análisis externo o contaduría.</li>
+            <li><strong>Respaldo DB:</strong> Herramienta para emitir copias de seguridad de la base de datos completa.</li>
+        </ul>
+
+        <hr style="border-top: 1px dashed var(--color-borde); margin: 30px 0;">
+        <p style="text-align: center; color: #6b7280; font-size: 0.9em;">
+            © Inventario Pro - Manual de Usuario Oficial<br>
+            Generado para la versión 1.0.0
+        </p>
+
+    </div>
+</body>
+</html>
