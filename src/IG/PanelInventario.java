@@ -60,6 +60,12 @@ public class PanelInventario extends JPanel {
         JButton btnAjuste = PanelProductos.crearBoton("🔧 Ajuste", new Color(99, 102, 241));
         btnAjuste.addActionListener(e -> dialogoMovimiento("ajuste"));
 
+        // Aplicar permisos
+        CX.SesionUsuario sesion = CX.SesionUsuario.getInstancia();
+        btnEntrada.setEnabled(sesion.tienePermiso("Inventario", "Crear"));
+        btnSalida.setEnabled(sesion.tienePermiso("Inventario", "Eliminar"));
+        btnAjuste.setEnabled(sesion.tienePermiso("Inventario", "Editar"));
+
         acciones.add(campoBuscar);
         acciones.add(btnEntrada);
         acciones.add(btnSalida);

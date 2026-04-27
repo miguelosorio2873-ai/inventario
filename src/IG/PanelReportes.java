@@ -25,6 +25,9 @@ public class PanelReportes extends JPanel {
         setBackground(new Color(24, 24, 27));
         setLayout(new BorderLayout(0, 15));
         setBorder(BorderFactory.createEmptyBorder(25, 25, 25, 25));
+        
+        CX.SesionUsuario sesion = CX.SesionUsuario.getInstancia();
+        boolean puedeExportar = sesion.tienePermiso("Reportes", "Exportar");
 
         // Header
         JPanel header = new JPanel(new BorderLayout());
@@ -55,6 +58,7 @@ public class PanelReportes extends JPanel {
         descInv.setForeground(new Color(180, 180, 180));
         
         JButton btnExportInv = PanelProductos.crearBoton("📊 Exportar a Excel (Productos)", new Color(16, 185, 129));
+        btnExportInv.setEnabled(puedeExportar);
         btnExportInv.addActionListener(e -> exportarProductos());
         
         JPanel pnlInv = new JPanel(new BorderLayout(0, 15));
@@ -69,6 +73,7 @@ public class PanelReportes extends JPanel {
         descFac.setForeground(new Color(180, 180, 180));
         
         JButton btnExportFac = PanelProductos.crearBoton("🧾 Exportar a Excel (Facturas)", new Color(59, 130, 246));
+        btnExportFac.setEnabled(puedeExportar);
         btnExportFac.addActionListener(e -> exportarFacturas());
         
         JPanel pnlFac = new JPanel(new BorderLayout(0, 15));

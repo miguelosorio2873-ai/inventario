@@ -57,6 +57,12 @@ public class PanelFacturas extends JPanel {
         JButton btnPagar = PanelProductos.crearBoton("✅ Marcar Pagada", new Color(59, 130, 246));
         btnPagar.addActionListener(e -> cambiarEstado("Pagada"));
 
+        // Aplicar permisos
+        CX.SesionUsuario sesion = CX.SesionUsuario.getInstancia();
+        btnNueva.setEnabled(sesion.tienePermiso("Facturas", "Crear"));
+        btnPagar.setEnabled(sesion.tienePermiso("Facturas", "Editar"));
+        btnAnular.setEnabled(sesion.tienePermiso("Facturas", "Eliminar"));
+
         acciones.add(campoBuscar);
         acciones.add(btnNueva);
         acciones.add(btnPagar);

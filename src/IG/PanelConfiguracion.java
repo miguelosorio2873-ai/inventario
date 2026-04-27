@@ -9,6 +9,9 @@ import java.awt.*;
 public class PanelConfiguracion extends JPanel {
 
     public PanelConfiguracion() {
+        CX.SesionUsuario sesion = CX.SesionUsuario.getInstancia();
+        boolean puedeEditar = sesion.tienePermiso("Configuracion", "Editar");
+        
         setBackground(new Color(24, 24, 27));
         setLayout(new BorderLayout(0, 15));
         setBorder(BorderFactory.createEmptyBorder(25, 25, 25, 25));
@@ -76,6 +79,7 @@ public class PanelConfiguracion extends JPanel {
         addFormRow(formEmpresa, gcf, row++, "Dirección:", tfDir);
 
         JButton btnGuardar = PanelProductos.crearBoton("💾 Guardar Cambios", new Color(16, 185, 129));
+        btnGuardar.setEnabled(puedeEditar);
         btnGuardar.addActionListener(e -> JOptionPane.showMessageDialog(this, "Datos de la empresa guardados (Simulado)."));
         
         gcf.gridy = row;
@@ -99,6 +103,7 @@ public class PanelConfiguracion extends JPanel {
         addFormRow(formMoneda, gcm, 0, "Tasa Actual (Bs por 1$):", tfTasa);
         
         JButton btnGuardarTasa = PanelProductos.crearBoton("💾 Actualizar Tasa", new Color(16, 185, 129));
+        btnGuardarTasa.setEnabled(puedeEditar);
         btnGuardarTasa.addActionListener(e -> {
             try {
                 double nt = Double.parseDouble(tfTasa.getText().replace(",", "."));

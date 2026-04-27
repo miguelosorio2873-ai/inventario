@@ -51,6 +51,13 @@ public class PanelUsuarios extends JPanel {
         JButton btnEliminar = PanelProductos.crearBoton("🗑️ Eliminar", new Color(239, 68, 68));
         btnEliminar.addActionListener(e -> eliminarSeleccionado());
 
+        // Aplicar permisos
+        CX.SesionUsuario sesion = CX.SesionUsuario.getInstancia();
+        btnNuevo.setEnabled(sesion.tienePermiso("Usuarios", "Crear"));
+        btnEditar.setEnabled(sesion.tienePermiso("Usuarios", "Editar"));
+        btnPass.setEnabled(sesion.tienePermiso("Usuarios", "Editar"));
+        btnEliminar.setEnabled(sesion.tienePermiso("Usuarios", "Eliminar"));
+
         acciones.add(btnNuevo);
         acciones.add(btnEditar);
         acciones.add(btnPass);
@@ -121,33 +128,82 @@ public class PanelUsuarios extends JPanel {
         cbRol.setEditable(true);
         if (ed && usr.getRol() != null) cbRol.setSelectedItem(usr.getRol());
 
-        // Panel de Permisos
-        String[] modulos = {"Productos", "Categorías", "Clientes", "Proveedores", "Inventario", "Facturas", "Usuarios", "Reportes", "Configuración"};
-        JCheckBox[] checks = new JCheckBox[modulos.length];
-        JPanel pPermisos = new JPanel(new GridLayout(0, 3, 5, 5));
-        pPermisos.setBackground(new Color(45, 45, 45));
-        pPermisos.setBorder(BorderFactory.createTitledBorder(BorderFactory.createLineBorder(new Color(70, 70, 70)), "Permisos de Acceso", 0, 0, null, Color.WHITE));
+        // Panel de Permisos Detallado
+        String[] modulos = {"Productos", "Categorias", "Clientes", "Proveedores", "Inventario", "Facturas", "Usuarios", "Reportes", "Configuracion"};
+        String[] acciones = {"Crear", "Editar", "Eliminar", "Exportar"};
+        char[] codigos = {'C', 'E', 'D', 'X'};
         
+        JCheckBox[][] matrix = new JCheckBox[modulos.length][acciones.length];
+        JPanel pPermisos = new JPanel();
+        pPermisos.setLayout(new BoxLayout(pPermisos, BoxLayout.Y_AXIS));
+        pPermisos.setBackground(new Color(45, 45, 45));
+        pPermisos.setBorder(BorderFactory.createTitledBorder(BorderFactory.createLineBorder(new Color(70, 70, 70)), "Permisos Detallados", 0, 0, null, Color.WHITE));
+
         for (int i = 0; i < modulos.length; i++) {
-            checks[i] = new JCheckBox(modulos[i]);
-            checks[i].setForeground(Color.WHITE);
-            checks[i].setOpaque(false);
-            pPermisos.add(checks[i]);
-            if (ed && usr.getPermisos() != null && usr.getPermisos().contains(modulos[i].toUpperCase())) {
-                checks[i].setSelected(true);
+            JPanel row = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 2));
+            row.setOpaque(false);
+            JLabel lbl = new JLabel(modulos[i]);
+            lbl.setForeground(Color.WHITE);
+            lbl.setPreferredSize(new Dimension(100, 20));
+            lbl.setFont(new Font("Segoe UI", Font.BOLD, 12));
+            row.add(lbl);
+            
+            for (int j = 0; j < acciones.length; j++) {
+                String etiqueta = obtenerEtiquetaAccion(modulos[i], codigos[j]);
+                matrix[i][j] = new JCheckBox(etiqueta);
+                matrix[i][j].setFont(new Font("Segoe UI", Font.PLAIN, 11));
+                matrix[i][j].setForeground(new Color(200, 200, 200));
+                matrix[i][j].setOpaque(false);
+                
+                if (!esAccionAplicable(modulos[i], codigos[j])) {
+                    matrix[i][j].setVisible(false);
+                }
+                
+                row.add(matrix[i][j]);
+                
+                if (ed && usr.getPermisos() != null) {
+                    String p = normalizar(usr.getPermisos());
+                    String m = normalizar(modulos[i]);
+                    int idx = p.indexOf(m + ":");
+                    if (idx != -1) {
+                        int endIdx = p.indexOf(",", idx);
+                        String sub = (endIdx == -1) ? p.substring(idx) : p.substring(idx, endIdx);
+                        String actionsPart = sub.substring(sub.indexOf(":") + 1);
+                        if (actionsPart.contains(String.valueOf(codigos[j]))) matrix[i][j].setSelected(true);
+                    } else if (p.contains(m)) {
+                        // Comportamiento por defecto para formato antiguo si se desea
+                    }
+                }
             }
+            
+            pPermisos.add(row);
         }
+
+        JPanel pBtnPerm = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        pBtnPerm.setOpaque(false);
+        JButton btnAll = new JButton("Seleccionar Todo");
+        JButton btnNone = new JButton("Limpiar");
+        btnAll.addActionListener(e -> {
+            for(JCheckBox[] r : matrix) for(JCheckBox c : r) {
+                if (c.isVisible()) c.setSelected(true);
+            }
+        });
+        btnNone.addActionListener(e -> {
+            for(JCheckBox[] r : matrix) for(JCheckBox c : r) {
+                if (c.isVisible()) c.setSelected(false);
+            }
+        });
+        pBtnPerm.add(btnAll); pBtnPerm.add(btnNone);
+        pPermisos.add(pBtnPerm);
 
         cbRol.addActionListener(e -> {
             boolean isAdmin = "Admin".equalsIgnoreCase(cbRol.getSelectedItem().toString());
-            for (JCheckBox ck : checks) {
-                ck.setEnabled(!isAdmin);
-                if (isAdmin) ck.setSelected(true);
-            }
+            // Ya no forzamos la selección, solo permitimos editar o no según se prefiera.
+            // Para permitir "Admins Restringidos", dejaremos las casillas habilitadas siempre.
         });
-        // Disparar evento inicial
-        boolean isAdminIni = "Admin".equalsIgnoreCase(cbRol.getSelectedItem().toString());
-        for (JCheckBox ck : checks) { ck.setEnabled(!isAdminIni); if (isAdminIni) ck.setSelected(true); }
+        
+        // Disparar evento inicial (opcional ahora)
+        // No forzamos selección inicial
 
         // Preguntas 1-4
         JTextField tfP1 = PanelProductos.crearCampo(ed ? usr.getPregunta1() : "Nombre de tu primera mascota?", 200);
@@ -219,13 +275,15 @@ public class PanelUsuarios extends JPanel {
                 u.setEmail(tfEmail.getText().trim());
                 u.setRol(cbRol.getSelectedItem().toString());
                 
-                // Construir cadena de permisos
+                // Construir cadena de permisos detallada
                 StringBuilder sb = new StringBuilder();
                 for (int i = 0; i < modulos.length; i++) {
-                    if (checks[i].isSelected()) {
-                        if (sb.length() > 0) sb.append(",");
-                        sb.append(modulos[i].toUpperCase());
+                    StringBuilder modSb = new StringBuilder();
+                    for (int j = 0; j < acciones.length; j++) {
+                        if (matrix[i][j].isSelected()) modSb.append(codigos[j]);
                     }
+                    if (sb.length() > 0) sb.append(",");
+                    sb.append(normalizar(modulos[i])).append(":").append(modSb.toString());
                 }
                 u.setPermisos(sb.toString());
 
@@ -236,6 +294,20 @@ public class PanelUsuarios extends JPanel {
 
                 if (ed) {
                     dao.actualizar(u);
+                    // Actualizar sesión en vivo si el usuario editado es el actual
+                    CX.SesionUsuario sesionActual = CX.SesionUsuario.getInstancia();
+                    if (u.getId() == sesionActual.getUsuarioId()) {
+                        sesionActual.setPermisos(u.getPermisos());
+                        if (Dashboard.getInstancia() != null) {
+                            Dashboard.getInstancia().refrescarMenu();
+                            if (sesionActual.tienePermiso("Usuarios", "Ver")) {
+                                Dashboard.getInstancia().mostrarPanel(new PanelUsuarios());
+                            } else {
+                                Dashboard.getInstancia().mostrarPanel(new PanelInicio());
+                            }
+                            JOptionPane.showMessageDialog(this, "Tus permisos se han actualizado y el menú ha sido refrescado.", "Actualización Exitosa", JOptionPane.INFORMATION_MESSAGE);
+                        }
+                    }
                 } else {
                     String pass = new String(tfPass.getPassword());
                     String passConfirm = new String(tfPassConfirm.getPassword());
@@ -355,5 +427,64 @@ public class PanelUsuarios extends JPanel {
                 cargar();
             } catch (SQLException e) { JOptionPane.showMessageDialog(this, e.getMessage()); }
         }
+    }
+    private String normalizar(String s) {
+        if (s == null) return "";
+        return s.toUpperCase()
+                .replace("Á", "A").replace("É", "E").replace("Í", "I").replace("Ó", "O").replace("Ú", "U")
+                .replaceAll("[^A-Z0-9:,]", "");
+    }
+
+    private String obtenerEtiquetaAccion(String modulo, char codigo) {
+        if (codigo == 'X') return "Exportar";
+        
+        switch (modulo) {
+            case "Inventario":
+                if (codigo == 'C') return "Entrada";
+                if (codigo == 'E') return "Ajuste";
+                if (codigo == 'D') return "Salida";
+                break;
+            case "Facturas":
+                if (codigo == 'C') return "Emitir";
+                if (codigo == 'E') return "Pagar";
+                if (codigo == 'D') return "Anular";
+                break;
+            case "Clientes":
+            case "Proveedores":
+            case "Usuarios":
+                if (codigo == 'C') return "Registrar";
+                break;
+            case "Configuracion":
+                if (codigo == 'E') return "Modificar";
+                break;
+        }
+        
+        switch (codigo) {
+            case 'C': return "Crear";
+            case 'E': return "Editar";
+            case 'D': return "Eliminar";
+        }
+        return "";
+    }
+
+    private boolean esAccionAplicable(String modulo, char codigo) {
+        switch (modulo) {
+            case "Reportes":
+                return codigo == 'X'; // Solo Exportar
+            case "Configuracion":
+                return codigo == 'E'; // Solo Editar/Modificar
+            case "Facturas":
+                return codigo == 'C' || codigo == 'E' || codigo == 'D';
+            case "Inventario":
+                return codigo == 'C' || codigo == 'E' || codigo == 'D';
+            case "Productos":
+                return codigo == 'C' || codigo == 'E' || codigo == 'D';
+            case "Categorias":
+            case "Clientes":
+            case "Proveedores":
+            case "Usuarios":
+                return codigo == 'C' || codigo == 'E' || codigo == 'D'; // Crear, Editar, Eliminar
+        }
+        return true;
     }
 }

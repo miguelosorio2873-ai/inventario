@@ -8,6 +8,8 @@ import java.awt.event.*;
 public class Dashboard extends JFrame {
 
     private JPanel panelContenido;
+    private JPanel sidebarPanel;
+    private static Dashboard instancia;
     private JButton btnActivo = null;
     private final Color COLOR_SIDEBAR = new Color(17, 24, 39);
     private final Color COLOR_SIDEBAR_HOVER = new Color(31, 41, 55);
@@ -15,6 +17,7 @@ public class Dashboard extends JFrame {
     private final Color COLOR_FONDO = new Color(24, 24, 27);
 
     public Dashboard() {
+        instancia = this;
         setTitle("Inventario Pro - Dashboard");
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setSize(1280, 780);
@@ -163,10 +166,31 @@ public class Dashboard extends JFrame {
         return btn;
     }
 
+    public static Dashboard getInstancia() {
+        return instancia;
+    }
+
+    public void refrescarMenu() {
+        if (sidebarPanel != null) {
+            sidebarPanel.removeAll();
+            JPanel nuevoMenu = crearSidebarContenido();
+            sidebarPanel.add(nuevoMenu, BorderLayout.CENTER);
+            sidebarPanel.revalidate();
+            sidebarPanel.repaint();
+        }
+    }
+
     private JPanel crearSidebar() {
+        sidebarPanel = new JPanel(new BorderLayout());
+        sidebarPanel.setBackground(COLOR_SIDEBAR);
+        sidebarPanel.setPreferredSize(new Dimension(220, 0));
+        sidebarPanel.add(crearSidebarContenido());
+        return sidebarPanel;
+    }
+
+    private JPanel crearSidebarContenido() {
         JPanel sidebar = new JPanel();
-        sidebar.setBackground(COLOR_SIDEBAR);
-        sidebar.setPreferredSize(new Dimension(220, 0));
+        sidebar.setOpaque(false);
         sidebar.setLayout(new BoxLayout(sidebar, BoxLayout.Y_AXIS));
         sidebar.setBorder(BorderFactory.createEmptyBorder(15, 0, 15, 0));
 
@@ -181,14 +205,14 @@ public class Dashboard extends JFrame {
         String[][] items = {
             {"home.svg", "Inicio"},
             {"box.svg", "Productos"},
-            {"tags.svg", "Categorías"},
+            {"tags.svg", "Categorias"},
             {"users.svg", "Clientes"},
             {"truck.svg", "Proveedores"},
             {"chart-bar.svg", "Inventario"},
             {"file-invoice.svg", "Facturas"},
             {"users.svg", "Usuarios"},
             {"chart-pie.svg", "Reportes"},
-            {"cog.svg", "Configuración"}
+            {"cog.svg", "Configuracion"}
         };
 
         SesionUsuario sesion = SesionUsuario.getInstancia();
@@ -197,25 +221,29 @@ public class Dashboard extends JFrame {
         for (String[] item : items) {
             String modulo = item[1];
             
-            // Inicio siempre visible. Otros dependen de permisos o si es admin.
-            if (!"Inicio".equals(modulo) && !isAdmin && !sesion.tienePermiso(modulo)) {
-                continue;
-            }
-
+            boolean tienePerm = sesion.tienePermiso(modulo);
+            System.out.println("[DEBUG] Módulo: " + modulo + " | Visible: " + tienePerm);
+            
             JButton btn = crearBotonMenu(item[1], item[0]);
+            
+            // Inicio siempre activo. Otros dependen de permisos.
+            if (!"Inicio".equals(modulo)) {
+                btn.setEnabled(tienePerm);
+            }
+            
             btn.addActionListener(e -> {
                 setBotonActivo(btn);
                 switch (item[1]) {
                     case "Inicio": mostrarPanel(new PanelInicio()); break;
                     case "Productos": mostrarPanel(new PanelProductos()); break;
-                    case "Categorías": mostrarPanel(new PanelCategorias()); break;
+                    case "Categorias": mostrarPanel(new PanelCategorias()); break;
                     case "Clientes": mostrarPanel(new PanelClientes()); break;
                     case "Proveedores": mostrarPanel(new PanelProveedores()); break;
                     case "Inventario": mostrarPanel(new PanelInventario()); break;
                     case "Facturas": mostrarPanel(new PanelFacturas()); break;
                     case "Usuarios": mostrarPanel(new PanelUsuarios()); break;
                     case "Reportes": mostrarPanel(new PanelReportes()); break;
-                    case "Configuración": mostrarPanel(new PanelConfiguracion()); break;
+                    case "Configuracion": mostrarPanel(new PanelConfiguracion()); break;
                 }
             });
             sidebar.add(btn);
@@ -317,7 +345,7 @@ public class Dashboard extends JFrame {
         btnActivo = btn;
     }
 
-    private void mostrarPanel(JPanel panel) {
+    public void mostrarPanel(JPanel panel) {
         panelContenido.removeAll();
         panelContenido.add(panel, BorderLayout.CENTER);
         panelContenido.revalidate();

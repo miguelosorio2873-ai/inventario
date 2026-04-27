@@ -51,6 +51,12 @@ public class PanelClientes extends JPanel {
         JButton btnEliminar = PanelProductos.crearBoton("🗑️ Eliminar", new Color(239, 68, 68));
         btnEliminar.addActionListener(e -> eliminarSel());
 
+        // Aplicar permisos
+        CX.SesionUsuario sesion = CX.SesionUsuario.getInstancia();
+        btnNuevo.setEnabled(sesion.tienePermiso("Clientes", "Crear"));
+        btnEditar.setEnabled(sesion.tienePermiso("Clientes", "Editar"));
+        btnEliminar.setEnabled(sesion.tienePermiso("Clientes", "Eliminar"));
+
         acciones.add(campoBuscar); acciones.add(btnNuevo); acciones.add(btnEditar); acciones.add(btnEliminar);
         header.add(titulo, BorderLayout.WEST);
         header.add(acciones, BorderLayout.EAST);

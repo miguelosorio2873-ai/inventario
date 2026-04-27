@@ -62,6 +62,12 @@ public class PanelProductos extends JPanel {
         JButton btnEliminar = crearBoton("🗑️ Eliminar", new Color(239, 68, 68));
         btnEliminar.addActionListener(e -> eliminarSeleccionado());
 
+        // Aplicar permisos
+        CX.SesionUsuario sesion = CX.SesionUsuario.getInstancia();
+        btnNuevo.setEnabled(sesion.tienePermiso("Productos", "Crear"));
+        btnEditar.setEnabled(sesion.tienePermiso("Productos", "Editar"));
+        btnEliminar.setEnabled(sesion.tienePermiso("Productos", "Eliminar"));
+
         acciones.add(campoBuscar);
         acciones.add(btnNuevo);
         acciones.add(btnEditar);
