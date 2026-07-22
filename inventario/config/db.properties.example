@@ -1,0 +1,3 @@
+db.url=jdbc:mysql://localhost:3306/inventario_db
+db.user=usuario_db
+db.password=contraseña_segura

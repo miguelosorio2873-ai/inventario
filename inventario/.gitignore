@@ -4,3 +4,6 @@
 .vscode/
 *.class
 *.log
+
+# Configuración sensible (credenciales de base de datos)
+config/db.properties
