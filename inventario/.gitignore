@@ -1,0 +1,6 @@
+/target/
+/build/
+/nbproject/private/
+.vscode/
+*.class
+*.log
