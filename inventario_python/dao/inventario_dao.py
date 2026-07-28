@@ -111,7 +111,8 @@ class InventarioDAO:
             return 0.0
         try:
             cur = conn.cursor()
-            cur.execute("SELECT COALESCE(SUM(total),0) FROM factura WHERE MONTH(fecha_emision) = MONTH(CURDATE()) AND YEAR(fecha_emision) = YEAR(CURDATE())")
+            anulada = encriptar("Anulada")
+            cur.execute("SELECT COALESCE(SUM(total),0) FROM factura WHERE MONTH(fecha_emision) = MONTH(CURDATE()) AND YEAR(fecha_emision) = YEAR(CURDATE()) AND estado != %s", (anulada,))
             return cur.fetchone()[0]
         finally:
             conn.close()

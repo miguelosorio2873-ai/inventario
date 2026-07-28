@@ -205,8 +205,25 @@ Namespace inventario_visual
                 MessageBox.Show("El correo no existe en el sistema.", "Recuperar contraseña", MessageBoxButtons.OK, MessageBoxIcon.Warning)
                 Return
             End If
-            Dim respuesta As String = InputBox(usuario.Pregunta1, "Pregunta de seguridad").Trim()
-            If Not String.Equals(respuesta, usuario.Respuesta1, StringComparison.OrdinalIgnoreCase) Then
+            Dim preguntas As New List(Of String)
+            If Not String.IsNullOrEmpty(usuario.Pregunta1) Then preguntas.Add(usuario.Pregunta1)
+            If Not String.IsNullOrEmpty(usuario.Pregunta2) Then preguntas.Add(usuario.Pregunta2)
+            If Not String.IsNullOrEmpty(usuario.Pregunta3) Then preguntas.Add(usuario.Pregunta3)
+            If Not String.IsNullOrEmpty(usuario.Pregunta4) Then preguntas.Add(usuario.Pregunta4)
+            If preguntas.Count = 0 Then
+                MessageBox.Show("El usuario no tiene preguntas de seguridad configuradas.", "Recuperar contraseña", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                Return
+            End If
+            Dim rng As New Random()
+            Dim idx As Integer = rng.Next(preguntas.Count)
+            Dim preguntaElegida As String = preguntas(idx)
+            Dim respuestaCorrecta As String = ""
+            If preguntaElegida = usuario.Pregunta1 Then respuestaCorrecta = usuario.Respuesta1
+            If preguntaElegida = usuario.Pregunta2 Then respuestaCorrecta = usuario.Respuesta2
+            If preguntaElegida = usuario.Pregunta3 Then respuestaCorrecta = usuario.Respuesta3
+            If preguntaElegida = usuario.Pregunta4 Then respuestaCorrecta = usuario.Respuesta4
+            Dim respuesta As String = InputBox(preguntaElegida, "Pregunta de seguridad").Trim()
+            If Not String.Equals(respuesta, respuestaCorrecta, StringComparison.OrdinalIgnoreCase) Then
                 MessageBox.Show("Respuesta incorrecta.", "Recuperar contraseña", MessageBoxButtons.OK, MessageBoxIcon.Error)
                 Return
             End If

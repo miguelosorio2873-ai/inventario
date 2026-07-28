@@ -11,7 +11,7 @@ public class ClienteDAO {
 
     public List<Cliente> listarTodos() throws SQLException {
         List<Cliente> lista = new ArrayList<>();
-        String sql = "SELECT * FROM cliente ORDER BY nombre";
+        String sql = "SELECT * FROM cliente ORDER BY id DESC";
         try (Connection con = ConexionBD.conectar();
              PreparedStatement ps = con.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
@@ -22,11 +22,14 @@ public class ClienteDAO {
 
     public List<Cliente> buscar(String texto) throws SQLException {
         List<Cliente> lista = new ArrayList<>();
-        String sql = "SELECT * FROM cliente WHERE nombre LIKE ? OR cedula LIKE ? ORDER BY nombre";
+        String enc = AESUtil.encriptar(texto);
+        String sql = "SELECT * FROM cliente WHERE nombre LIKE ? OR cedula LIKE ? OR nombre = ? OR cedula = ? ORDER BY id DESC";
         try (Connection con = ConexionBD.conectar();
              PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setString(1, "%" + texto + "%"); // Búsqueda LIKE por nombre (no funcionará si está encriptado, pero mantenemos compatibilidad por ahora)
-            ps.setString(2, AESUtil.encriptar(texto)); // Búsqueda exacta de cédula encriptada 
+            ps.setString(1, "%" + texto + "%");
+            ps.setString(2, "%" + texto + "%");
+            ps.setString(3, enc);
+            ps.setString(4, enc);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) lista.add(mapear(rs));
             }

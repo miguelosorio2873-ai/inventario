@@ -11,7 +11,7 @@ public class CategoriaDAO {
 
     public List<Categoria> listarTodas() throws SQLException {
         List<Categoria> lista = new ArrayList<>();
-        String sql = "SELECT * FROM categorias ORDER BY nombre";
+        String sql = "SELECT * FROM categorias ORDER BY id DESC";
         try (Connection con = ConexionBD.conectar();
              PreparedStatement ps = con.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {

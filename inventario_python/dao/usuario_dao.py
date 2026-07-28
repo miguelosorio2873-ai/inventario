@@ -61,6 +61,18 @@ class UsuarioDAO:
         finally:
             conn.close()
 
+    def buscar_por_id(self, id):
+        conn = conectar()
+        if not conn:
+            return None
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT * FROM usuario WHERE id = %s", (id,))
+            row = cur.fetchone()
+            return self._mapear(row) if row else None
+        finally:
+            conn.close()
+
     def buscar_por_email(self, email):
         conn = conectar()
         if not conn:

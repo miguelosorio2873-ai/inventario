@@ -18,8 +18,31 @@ Namespace inventario_visual
         End Function
 
         Public Function Buscar(texto As String) As List(Of Cliente)
-            Dim t = texto.ToLower()
-            Return ListarTodos().Where(Function(c) c.Nombre.ToLower().Contains(t) OrElse c.Cedula.ToLower().Contains(t)).ToList()
+            Dim lista As New List(Of Cliente)
+            Using conn = ConexionDB.GetConnection()
+                conn.Open()
+                Dim enc As String = AESUtil.Encriptar(texto)
+                Dim sql As String = "SELECT * FROM cliente WHERE nombre LIKE @t OR cedula LIKE @t OR nombre = @enc OR cedula = @enc ORDER BY id DESC"
+                Using cmd As New MySqlCommand(sql, conn)
+                    cmd.Parameters.AddWithValue("@t", "%" & texto & "%")
+                    cmd.Parameters.AddWithValue("@enc", enc)
+                    Using reader = cmd.ExecuteReader()
+                        While reader.Read()
+                            lista.Add(Map(reader))
+                        End While
+                    End Using
+                End Using
+            End Using
+            Return lista
+        End Function
+
+        Public Function ContarTotal() As Integer
+            Using conn = ConexionDB.GetConnection()
+                conn.Open()
+                Using cmd As New MySqlCommand("SELECT COUNT(*) FROM cliente", conn)
+                    Return Convert.ToInt32(cmd.ExecuteScalar())
+                End Using
+            End Using
         End Function
 
         Public Sub Insertar(c As Cliente)

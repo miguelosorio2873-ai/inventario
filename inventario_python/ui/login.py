@@ -8,6 +8,7 @@ from dao.usuario_dao import UsuarioDAO
 from core.sesion_usuario import SesionUsuario
 from ui.dashboard import Dashboard
 from utils.argon2_util import es_segura, get_requisitos_mensaje
+from utils.icon_util import icon_box, icon_users, icon_key
 from tkinter import messagebox, simpledialog
 import random
 from config import *
@@ -23,9 +24,10 @@ class Login(ctk.CTk):
         self.protocol("WM_DELETE_WINDOW", lambda: sys_exit())
 
         left = ctk.CTkFrame(self, fg_color=COLOR_GREEN, corner_radius=0)
-        left.pack(side="left", fill="both")
+        left.pack(side="left", fill="both", expand=True)
 
-        ctk.CTkLabel(left, text="Inventario Pro", font=("Segoe UI", 32, "bold"), text_color="#ffffff").pack(pady=(150, 5))
+        ctk.CTkLabel(left, text="", image=icon_box(72, "#ffffff")).pack(pady=(120, 5))
+        ctk.CTkLabel(left, text="Inventario Pro", font=("Segoe UI", 32, "bold"), text_color="#ffffff").pack(pady=(5, 5))
         ctk.CTkLabel(left, text="Sistema Integral de Gestión\nde Inventario", font=("Segoe UI", 16), text_color="#e0e0e0", justify="center").pack(pady=5)
         ctk.CTkLabel(left, text="v1.0.0", font=("Segoe UI", 12), text_color="#a0a0a0").pack(pady=(40, 0))
 
@@ -36,12 +38,18 @@ class Login(ctk.CTk):
         ctk.CTkLabel(right, text="Ingrese sus credenciales para continuar", font=("Segoe UI", 13), text_color=COLOR_TEXT_MUTED).pack(pady=(0, 30), padx=50, anchor="w")
 
         ctk.CTkLabel(right, text="Correo electrónico", font=("Segoe UI", 12), text_color=COLOR_TEXT_MUTED).pack(padx=50, anchor="w")
-        self.email_entry = ctk.CTkEntry(right, width=300, height=40, fg_color="#2d2d2d", border_color="#3c3c3c", text_color=COLOR_TEXT)
-        self.email_entry.pack(padx=50, pady=(2, 15), anchor="w")
+        email_frame = ctk.CTkFrame(right, fg_color="#2d2d2d", corner_radius=6, border_width=1, border_color="#3c3c3c")
+        email_frame.pack(padx=50, pady=(2, 15), anchor="w")
+        ctk.CTkLabel(email_frame, text="", image=icon_users(16, "#969696")).pack(side="left", padx=(12, 0))
+        self.email_entry = ctk.CTkEntry(email_frame, width=260, height=38, fg_color="transparent", border_width=0, text_color=COLOR_TEXT)
+        self.email_entry.pack(side="left", padx=(8, 12), pady=0)
 
         ctk.CTkLabel(right, text="Contraseña", font=("Segoe UI", 12), text_color=COLOR_TEXT_MUTED).pack(padx=50, anchor="w")
-        self.pass_entry = ctk.CTkEntry(right, width=300, height=40, fg_color="#2d2d2d", border_color="#3c3c3c", text_color=COLOR_TEXT, show="*")
-        self.pass_entry.pack(padx=50, pady=(2, 25), anchor="w")
+        pass_frame = ctk.CTkFrame(right, fg_color="#2d2d2d", corner_radius=6, border_width=1, border_color="#3c3c3c")
+        pass_frame.pack(padx=50, pady=(2, 25), anchor="w")
+        ctk.CTkLabel(pass_frame, text="", image=icon_key(16, "#969696")).pack(side="left", padx=(12, 0))
+        self.pass_entry = ctk.CTkEntry(pass_frame, width=260, height=38, fg_color="transparent", border_width=0, text_color=COLOR_TEXT, show="*")
+        self.pass_entry.pack(side="left", padx=(8, 12), pady=0)
 
         ctk.CTkButton(right, text="INGRESAR", width=300, height=42, fg_color=COLOR_GREEN, hover_color="#059669", font=("Segoe UI", 14, "bold"), command=self.hacer_login).pack(padx=50, pady=5, anchor="w")
 

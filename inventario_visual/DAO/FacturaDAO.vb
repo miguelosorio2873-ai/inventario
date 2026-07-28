@@ -17,8 +17,44 @@ Namespace inventario_visual
             Return lista
         End Function
 
+        Public Function Buscar(texto As String) As List(Of Factura)
+            Dim lista As New List(Of Factura)
+            Using conn = ConexionDB.GetConnection()
+                conn.Open()
+                Dim enc As String = AESUtil.Encriptar(texto)
+                Dim sql As String = "SELECT f.*, c.nombre AS cliente_nombre FROM factura f LEFT JOIN cliente c ON f.cliente_id=c.id WHERE f.numero_factura LIKE @t OR f.numero_factura = @enc ORDER BY f.id DESC"
+                Using cmd As New MySqlCommand(sql, conn)
+                    cmd.Parameters.AddWithValue("@t", "%" & texto & "%")
+                    cmd.Parameters.AddWithValue("@enc", enc)
+                    Using reader = cmd.ExecuteReader()
+                        While reader.Read()
+                            lista.Add(Map(reader))
+                        End While
+                    End Using
+                End Using
+            End Using
+            Return lista
+        End Function
+
         Public Function GenerarNumero() As String
-            Return String.Format("FAC-{0:yyyyMMdd}-{1}", DateTime.Now, Guid.NewGuid().ToString().Substring(0, 4).ToUpper())
+            Dim ultimoNumero As String = ""
+            Using conn = ConexionDB.GetConnection()
+                conn.Open()
+                Using cmd As New MySqlCommand("SELECT numero_factura FROM factura ORDER BY id DESC LIMIT 1", conn)
+                    Dim result = cmd.ExecuteScalar()
+                    If result IsNot Nothing AndAlso Not IsDBNull(result) Then
+                        ultimoNumero = AESUtil.Desencriptar(result.ToString())
+                    End If
+                End Using
+            End Using
+            Dim nextNum As Integer = 1
+            If Not String.IsNullOrEmpty(ultimoNumero) AndAlso ultimoNumero.StartsWith("FAC-") Then
+                Dim parts() As String = ultimoNumero.Split("-"c)
+                If parts.Length >= 2 AndAlso Integer.TryParse(parts(parts.Length - 1), nextNum) Then
+                    nextNum += 1
+                End If
+            End If
+            Return String.Format("FAC-{0:D3}", nextNum)
         End Function
 
         Public Sub Insertar(f As Factura)

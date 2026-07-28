@@ -11,7 +11,7 @@ public class ProductoDAO {
 
     public List<Producto> listarTodos() throws SQLException {
         List<Producto> lista = new ArrayList<>();
-        String sql = "SELECT p.* FROM producto p ORDER BY p.id";
+        String sql = "SELECT p.* FROM producto p ORDER BY p.id DESC";
         try (Connection con = ConexionBD.conectar();
              PreparedStatement ps = con.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
@@ -24,7 +24,7 @@ public class ProductoDAO {
         List<Producto> lista = new ArrayList<>();
         String sql = "SELECT p.*, c.nombre as categoria_nombre FROM producto p " +
                      "LEFT JOIN categorias c ON p.categoria_id = c.id " +
-                     "ORDER BY p.id";
+                     "ORDER BY p.id DESC";
         try (Connection con = ConexionBD.conectar();
              PreparedStatement ps = con.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
@@ -36,7 +36,8 @@ public class ProductoDAO {
     public List<Producto> buscar(String texto) throws SQLException {
         List<Producto> lista = new ArrayList<>();
         String sql = "SELECT p.* FROM producto p " +
-                     "WHERE p.nombre LIKE ? OR p.sku LIKE ? OR p.nombre = ? OR p.sku = ?";
+                     "WHERE p.nombre LIKE ? OR p.sku LIKE ? OR p.nombre = ? OR p.sku = ? " +
+                     "ORDER BY p.id DESC";
         try (Connection con = ConexionBD.conectar();
              PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, "%" + texto + "%");
@@ -52,7 +53,7 @@ public class ProductoDAO {
 
     public List<Producto> listarStockBajo() throws SQLException {
         List<Producto> lista = new ArrayList<>();
-        String sql = "SELECT p.* FROM producto p WHERE p.state = TRUE";
+        String sql = "SELECT p.* FROM producto p WHERE p.state = TRUE ORDER BY p.id DESC";
         try (Connection con = ConexionBD.conectar();
              PreparedStatement ps = con.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
@@ -79,8 +80,8 @@ public class ProductoDAO {
     }
 
     public void insertar(Producto p) throws SQLException {
-        String sql = "INSERT INTO producto (categoria_id, sku, nombre, descripcion, precio_venta, costo_promedio, stock_minimo, state, imagen) " +
-                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO producto (categoria_id, sku, nombre, descripcion, precio_venta, costo_promedio, stock_minimo, stock_actual, state, imagen) " +
+                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         try (Connection con = ConexionBD.conectar();
              PreparedStatement ps = con.prepareStatement(sql)) {
             if (p.getCategoriaId() > 0) ps.setLong(1, p.getCategoriaId());
@@ -91,15 +92,16 @@ public class ProductoDAO {
             ps.setDouble(5, p.getPrecioVenta());
             ps.setDouble(6, p.getCostoPromedio());
             ps.setDouble(7, p.getStockMinimo());
-            ps.setBoolean(8, p.isState());
-            ps.setString(9, AESUtil.encriptar(p.getImagen()));
+            ps.setDouble(8, p.getStockActual());
+            ps.setBoolean(9, p.isState());
+            ps.setString(10, p.getImagen());
             ps.executeUpdate();
         }
     }
 
     public void actualizar(Producto p) throws SQLException {
         String sql = "UPDATE producto SET categoria_id=?, sku=?, nombre=?, descripcion=?, precio_venta=?, " +
-                     "costo_promedio=?, stock_minimo=?, state=?, imagen=? WHERE id=?";
+                     "costo_promedio=?, stock_minimo=?, stock_actual=?, state=?, imagen=? WHERE id=?";
         try (Connection con = ConexionBD.conectar();
              PreparedStatement ps = con.prepareStatement(sql)) {
             if (p.getCategoriaId() > 0) ps.setLong(1, p.getCategoriaId());
@@ -110,9 +112,10 @@ public class ProductoDAO {
             ps.setDouble(5, p.getPrecioVenta());
             ps.setDouble(6, p.getCostoPromedio());
             ps.setDouble(7, p.getStockMinimo());
-            ps.setBoolean(8, p.isState());
-            ps.setString(9, AESUtil.encriptar(p.getImagen()));
-            ps.setLong(10, p.getId());
+            ps.setDouble(8, p.getStockActual());
+            ps.setBoolean(9, p.isState());
+            ps.setString(10, p.getImagen());
+            ps.setLong(11, p.getId());
             ps.executeUpdate();
         }
     }
@@ -144,6 +147,19 @@ public class ProductoDAO {
             }
         }
         return count;
+    }
+
+    public List<Producto> listarTopProductosPorStock(int limite) throws SQLException {
+        List<Producto> lista = new ArrayList<>();
+        String sql = "SELECT p.* FROM producto p WHERE p.state = TRUE ORDER BY p.stock_actual DESC LIMIT ?";
+        try (Connection con = ConexionBD.conectar();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setInt(1, limite);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) lista.add(mapear(rs));
+            }
+        }
+        return lista;
     }
 
     private Producto mapear(ResultSet rs) throws SQLException {

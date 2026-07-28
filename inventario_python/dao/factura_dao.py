@@ -53,7 +53,7 @@ class FacturaDAO:
         try:
             cur = conn.cursor()
             enc = encriptar(texto)
-            cur.execute("SELECT * FROM factura WHERE numero_factura = %s ORDER BY id DESC", (enc,))
+            cur.execute("SELECT * FROM factura WHERE numero_factura LIKE %s OR numero_factura = %s ORDER BY id DESC", (f"%{texto}%", enc))
             return [self._mapear(r) for r in cur.fetchall()]
         finally:
             conn.close()

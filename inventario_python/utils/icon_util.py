@@ -22,16 +22,13 @@ def _load_svg(filename, size=20, color="#ffffff"):
 
         svg_content = svg_content.replace("currentColor", color)
 
-        import cairosvg
+        from resvg_py import svg_to_bytes
         from PIL import Image
         import io
 
-        png_bytes = cairosvg.svg2png(
-            bytestring=svg_content.encode("utf-8"),
-            output_width=size * 2,
-            output_height=size * 2,
-        )
+        png_bytes = svg_to_bytes(svg_content)
         pil_image = Image.open(io.BytesIO(png_bytes))
+        pil_image = pil_image.resize((size * 2, size * 2), Image.LANCZOS)
 
         img = ctk.CTkImage(light_image=pil_image, dark_image=pil_image, size=(size, size))
         _cache[key] = img

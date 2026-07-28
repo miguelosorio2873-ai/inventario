@@ -28,7 +28,7 @@ class ProductoDAO:
             return []
         try:
             cur = conn.cursor()
-            cur.execute("SELECT * FROM producto ORDER BY id")
+            cur.execute("SELECT * FROM producto ORDER BY id DESC")
             rows = cur.fetchall()
             return [self._mapear(r) for r in rows]
         finally:
@@ -42,7 +42,7 @@ class ProductoDAO:
             cur = conn.cursor()
             cur.execute(
                 "SELECT p.*, c.nombre as categoria_nombre FROM producto p "
-                "LEFT JOIN categorias c ON p.categoria_id = c.id ORDER BY p.id"
+                "LEFT JOIN categorias c ON p.categoria_id = c.id ORDER BY p.id DESC"
             )
             rows = cur.fetchall()
             return [self._mapear(r) for r in rows]
@@ -57,7 +57,7 @@ class ProductoDAO:
             cur = conn.cursor()
             enc = encriptar(texto)
             cur.execute(
-                "SELECT * FROM producto WHERE nombre LIKE %s OR sku LIKE %s OR nombre = %s OR sku = %s",
+                "SELECT * FROM producto WHERE nombre LIKE %s OR sku LIKE %s OR nombre = %s OR sku = %s ORDER BY id DESC",
                 (f"%{texto}%", f"%{texto}%", enc, enc),
             )
             rows = cur.fetchall()
@@ -71,7 +71,7 @@ class ProductoDAO:
             return []
         try:
             cur = conn.cursor()
-            cur.execute("SELECT * FROM producto WHERE stock_actual <= stock_minimo AND state = 1 ORDER BY id")
+            cur.execute("SELECT * FROM producto WHERE stock_actual <= stock_minimo AND state = 1 ORDER BY id DESC")
             rows = cur.fetchall()
             return [self._mapear(r) for r in rows]
         finally:

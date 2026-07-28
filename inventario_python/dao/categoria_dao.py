@@ -18,7 +18,7 @@ class CategoriaDAO:
             return []
         try:
             cur = conn.cursor()
-            cur.execute("SELECT * FROM categorias ORDER BY id")
+            cur.execute("SELECT * FROM categorias ORDER BY id DESC")
             return [self._mapear(r) for r in cur.fetchall()]
         finally:
             conn.close()

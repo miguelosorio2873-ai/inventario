@@ -8,7 +8,7 @@ Namespace inventario_visual
             Dim lista As New List(Of MovimientoInventario)
             Using conn = ConexionDB.GetConnection()
                 conn.Open()
-                Dim sql As String = "SELECT i.*, p.nombre AS producto_nombre, pr.nombre_empresa AS proveedor_nombre FROM inventario i INNER JOIN producto p ON i.producto_id=p.id LEFT JOIN proveedor pr ON i.proveedor_id=pr.id ORDER BY i.id DESC"
+                Dim sql As String = "SELECT i.*, p.nombre AS producto_nombre, pr.nombre_empresa AS proveedor_nombre FROM inventario i LEFT JOIN producto p ON i.producto_id=p.id LEFT JOIN proveedor pr ON i.proveedor_id=pr.id ORDER BY i.id DESC"
                 Using cmd As New MySqlCommand(sql, conn), reader = cmd.ExecuteReader()
                     While reader.Read()
                         lista.Add(Map(reader))
@@ -64,6 +64,17 @@ Namespace inventario_visual
                 End Using
             End Using
         End Sub
+
+        Public Function VentasDelMes() As Double
+            Using conn = ConexionDB.GetConnection()
+                conn.Open()
+                Using cmd As New MySqlCommand("SELECT COALESCE(SUM(total),0) FROM factura WHERE MONTH(fecha_emision)=MONTH(CURDATE()) AND YEAR(fecha_emision)=YEAR(CURDATE()) AND estado != @anulada", conn)
+                    cmd.Parameters.AddWithValue("@anulada", AESUtil.Encriptar("Anulada"))
+                    Dim result = cmd.ExecuteScalar()
+                    Return If(result Is Nothing OrElse IsDBNull(result), 0D, Convert.ToDouble(result))
+                End Using
+            End Using
+        End Function
 
         Private Shared Function Map(reader As MySqlDataReader) As MovimientoInventario
             Return New MovimientoInventario With {.Id = Convert.ToInt64(reader("id")), .ProductoId = Convert.ToInt64(reader("producto_id")), .ProveedorId = If(IsDBNull(reader("proveedor_id")), CType(Nothing, Long?), Convert.ToInt64(reader("proveedor_id"))), .Precio = Convert.ToDouble(reader("precio")), .PrecioBalance = Convert.ToDouble(reader("precio_balance")), .Cantidad = Convert.ToDouble(reader("cantidad")), .TipoMovimiento = AESUtil.Desencriptar(If(IsDBNull(reader("tipo_movimiento")), "", reader("tipo_movimiento").ToString())), .FechaMovimiento = Convert.ToDateTime(reader("fecha_movimiento")), .Motivo = AESUtil.Desencriptar(If(IsDBNull(reader("motivo")), "", reader("motivo").ToString())), .ProductoNombre = AESUtil.Desencriptar(reader("producto_nombre").ToString()), .ProveedorNombre = AESUtil.Desencriptar(If(IsDBNull(reader("proveedor_nombre")), "", reader("proveedor_nombre").ToString()))}

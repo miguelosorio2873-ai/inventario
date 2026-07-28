@@ -12,7 +12,7 @@ public class InventarioDAO {
     public List<MovimientoInventario> listarMovimientos() throws SQLException {
         List<MovimientoInventario> lista = new ArrayList<>();
         String sql = "SELECT i.* FROM inventario i " +
-                     "ORDER BY i.fecha_movimiento DESC";
+                     "ORDER BY i.id DESC";
         try (Connection con = ConexionBD.conectar();
              PreparedStatement ps = con.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
@@ -27,7 +27,7 @@ public class InventarioDAO {
                      "FROM inventario i " +
                      "LEFT JOIN producto p ON i.producto_id = p.id " +
                      "LEFT JOIN proveedor pr ON i.proveedor_id = pr.id " +
-                     "ORDER BY i.fecha_movimiento DESC";
+                     "ORDER BY i.id DESC";
         try (Connection con = ConexionBD.conectar();
              PreparedStatement ps = con.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
@@ -50,7 +50,16 @@ public class InventarioDAO {
     public long registrarMovimiento(MovimientoInventario m) throws SQLException {
         String sqlMov = "INSERT INTO inventario (producto_id, proveedor_id, precio, precio_balance, cantidad, tipo_movimiento, motivo) " +
                         "VALUES (?, ?, ?, ?, ?, ?, ?)";
-        String sqlProd = "UPDATE producto SET stock_actual = stock_actual + ? WHERE id = ?";
+        String tipo = m.getTipoMovimiento();
+        String sqlProd;
+        double ajuste;
+        if ("Ajuste".equals(tipo)) {
+            sqlProd = "UPDATE producto SET stock_actual = ? WHERE id = ?";
+            ajuste = m.getCantidad();
+        } else {
+            sqlProd = "UPDATE producto SET stock_actual = stock_actual + ? WHERE id = ?";
+            ajuste = "Entrada".equals(tipo) ? m.getCantidad() : -m.getCantidad();
+        }
 
         try (Connection con = ConexionBD.conectar()) {
             con.setAutoCommit(false);
@@ -63,7 +72,7 @@ public class InventarioDAO {
                     ps.setDouble(3, m.getPrecio());
                     ps.setDouble(4, m.getPrecioBalance());
                     ps.setDouble(5, m.getCantidad());
-                    ps.setString(6, AESUtil.encriptar(m.getTipoMovimiento()));
+                    ps.setString(6, AESUtil.encriptar(tipo));
                     ps.setString(7, AESUtil.encriptar(m.getMotivo()));
                     ps.executeUpdate();
                     try (ResultSet keys = ps.getGeneratedKeys()) {
@@ -71,9 +80,8 @@ public class InventarioDAO {
                     }
                 }
 
-                // Actualizar stock en la tabla producto
                 try (PreparedStatement ps = con.prepareStatement(sqlProd)) {
-                    ps.setDouble(1, m.getCantidad());
+                    ps.setDouble(1, ajuste);
                     ps.setLong(2, m.getProductoId());
                     ps.executeUpdate();
                 }

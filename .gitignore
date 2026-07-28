@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.venv/
+
+# Java
+build/
+target/
+*.class
+
+# Visual Studio / .NET
+bin/
+obj/
+*.user
+*.suo
+*.sln.docstates
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Config sensible (credenciales)
+config/db.properties
+
+# Logs
+*.log
+
+# OS
+Thumbs.db
+.DS_Store

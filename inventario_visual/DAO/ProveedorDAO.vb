@@ -17,6 +17,25 @@ Namespace inventario_visual
             Return lista
         End Function
 
+        Public Function Buscar(texto As String) As List(Of Proveedor)
+            Dim lista As New List(Of Proveedor)
+            Using conn = ConexionDB.GetConnection()
+                conn.Open()
+                Dim enc As String = AESUtil.Encriptar(texto)
+                Dim sql As String = "SELECT * FROM proveedor WHERE nombre_empresa LIKE @t OR nit_cedula LIKE @t OR nombre_empresa = @enc OR nit_cedula = @enc ORDER BY id DESC"
+                Using cmd As New MySqlCommand(sql, conn)
+                    cmd.Parameters.AddWithValue("@t", "%" & texto & "%")
+                    cmd.Parameters.AddWithValue("@enc", enc)
+                    Using reader = cmd.ExecuteReader()
+                        While reader.Read()
+                            lista.Add(Map(reader))
+                        End While
+                    End Using
+                End Using
+            End Using
+            Return lista
+        End Function
+
         Public Sub Insertar(p As Proveedor)
             Using conn = ConexionDB.GetConnection()
                 conn.Open()

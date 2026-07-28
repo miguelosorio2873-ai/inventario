@@ -20,7 +20,7 @@ class ClienteDAO:
             return []
         try:
             cur = conn.cursor()
-            cur.execute("SELECT * FROM cliente ORDER BY id")
+            cur.execute("SELECT * FROM cliente ORDER BY id DESC")
             return [self._mapear(r) for r in cur.fetchall()]
         finally:
             conn.close()
@@ -32,7 +32,7 @@ class ClienteDAO:
         try:
             cur = conn.cursor()
             enc = encriptar(texto)
-            cur.execute("SELECT * FROM cliente WHERE nombre LIKE %s OR cedula = %s", (f"%{texto}%", enc))
+            cur.execute("SELECT * FROM cliente WHERE nombre LIKE %s OR cedula LIKE %s OR nombre = %s OR cedula = %s ORDER BY id DESC", (f"%{texto}%", f"%{texto}%", enc, enc))
             return [self._mapear(r) for r in cur.fetchall()]
         finally:
             conn.close()

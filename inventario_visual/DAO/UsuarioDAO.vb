@@ -52,6 +52,19 @@ Namespace inventario_visual
             End Using
         End Sub
 
+        Public Function BuscarPorId(id As Long) As Usuario
+            Using conn = ConexionDB.GetConnection()
+                conn.Open()
+                Using cmd As New MySqlCommand("SELECT * FROM usuario WHERE id=@id", conn)
+                    cmd.Parameters.AddWithValue("@id", id)
+                    Using reader = cmd.ExecuteReader()
+                        If reader.Read() Then Return Map(reader, True)
+                    End Using
+                End Using
+            End Using
+            Return Nothing
+        End Function
+
         Public Function ListarTodos() As List(Of Usuario)
             Dim lista As New List(Of Usuario)
             Using conn = ConexionDB.GetConnection()

@@ -22,7 +22,7 @@ class ProveedorDAO:
             return []
         try:
             cur = conn.cursor()
-            cur.execute("SELECT * FROM proveedor ORDER BY id")
+            cur.execute("SELECT * FROM proveedor ORDER BY id DESC")
             return [self._mapear(r) for r in cur.fetchall()]
         finally:
             conn.close()
@@ -34,7 +34,7 @@ class ProveedorDAO:
         try:
             cur = conn.cursor()
             enc = encriptar(texto)
-            cur.execute("SELECT * FROM proveedor WHERE nombre_empresa LIKE %s OR nit_cedula = %s", (f"%{texto}%", enc))
+            cur.execute("SELECT * FROM proveedor WHERE nombre_empresa LIKE %s OR nit_cedula LIKE %s OR nombre_empresa = %s OR nit_cedula = %s ORDER BY id DESC", (f"%{texto}%", f"%{texto}%", enc, enc))
             return [self._mapear(r) for r in cur.fetchall()]
         finally:
             conn.close()

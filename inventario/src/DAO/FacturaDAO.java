@@ -36,12 +36,14 @@ public class FacturaDAO {
 
     public List<Factura> buscar(String texto) throws SQLException {
         List<Factura> lista = new ArrayList<>();
+        String enc = AESUtil.encriptar(texto);
         String sql = "SELECT f.* FROM factura f " +
-                     "WHERE f.numero_factura = ? " +
+                     "WHERE f.numero_factura LIKE ? OR f.numero_factura = ? " +
                      "ORDER BY f.id DESC";
         try (Connection con = ConexionBD.conectar();
              PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setString(1, AESUtil.encriptar(texto));
+            ps.setString(1, "%" + texto + "%");
+            ps.setString(2, enc);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) lista.add(mapear(rs));
             }
@@ -56,7 +58,7 @@ public class FacturaDAO {
              ResultSet rs = ps.executeQuery()) {
             int next = 1;
             if (rs.next()) next = rs.getInt(1) + 1;
-            return String.format("FAC-%06d", next);
+            return String.format("FAC-%03d", next);
         }
     }
 

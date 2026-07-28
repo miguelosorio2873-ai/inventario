@@ -21,9 +21,11 @@ Namespace inventario_visual
             Dim lista As New List(Of Producto)
             Using conn = ConexionDB.GetConnection()
                 conn.Open()
-                Dim sql As String = "SELECT p.*, c.nombre AS categoria_nombre FROM producto p LEFT JOIN categorias c ON p.categoria_id = c.id WHERE p.state = 1 AND (AES_DESENCRIPTAR(p.nombre) LIKE @t OR AES_DESENCRIPTAR(p.sku) LIKE @t) ORDER BY p.id DESC"
+                Dim enc As String = AESUtil.Encriptar(texto)
+                Dim sql As String = "SELECT p.*, c.nombre AS categoria_nombre FROM producto p LEFT JOIN categorias c ON p.categoria_id = c.id WHERE p.state = 1 AND (p.nombre LIKE @t OR p.sku LIKE @t OR p.nombre = @enc OR p.sku = @enc) ORDER BY p.id DESC"
                 Using cmd As New MySqlCommand(sql, conn)
                     cmd.Parameters.AddWithValue("@t", "%" & texto & "%")
+                    cmd.Parameters.AddWithValue("@enc", enc)
                     Using reader = cmd.ExecuteReader()
                         While reader.Read()
                             lista.Add(Map(reader))
@@ -74,11 +76,57 @@ Namespace inventario_visual
         Public Sub Eliminar(id As Long)
             Using conn = ConexionDB.GetConnection()
                 conn.Open()
-                Dim cmd As New MySqlCommand("UPDATE producto SET state = 0 WHERE id = @id", conn)
-                cmd.Parameters.AddWithValue("@id", id)
-                cmd.ExecuteNonQuery()
+                Using cmd As New MySqlCommand("DELETE FROM producto WHERE id = @id", conn)
+                    cmd.Parameters.AddWithValue("@id", id)
+                    cmd.ExecuteNonQuery()
+                End Using
             End Using
         End Sub
+
+        Public Function ContarTotal() As Integer
+            Using conn = ConexionDB.GetConnection()
+                conn.Open()
+                Using cmd As New MySqlCommand("SELECT COUNT(*) FROM producto WHERE state = 1", conn)
+                    Return Convert.ToInt32(cmd.ExecuteScalar())
+                End Using
+            End Using
+        End Function
+
+        Public Function ListarStockBajo() As List(Of Producto)
+            Dim lista As New List(Of Producto)
+            Using conn = ConexionDB.GetConnection()
+                conn.Open()
+                Dim sql As String = "SELECT p.*, c.nombre AS categoria_nombre FROM producto p LEFT JOIN categorias c ON p.categoria_id = c.id WHERE p.state = 1"
+                Using cmd As New MySqlCommand(sql, conn), reader = cmd.ExecuteReader()
+                    While reader.Read()
+                        Dim p = Map(reader)
+                        If p.StockActual <= p.StockMinimo Then lista.Add(p)
+                    End While
+                End Using
+            End Using
+            Return lista
+        End Function
+
+        Public Function ContarStockBajo() As Integer
+            Return ListarStockBajo().Count
+        End Function
+
+        Public Function ListarTopProductosPorStock(limite As Integer) As List(Of Producto)
+            Dim lista As New List(Of Producto)
+            Using conn = ConexionDB.GetConnection()
+                conn.Open()
+                Dim sql As String = "SELECT p.*, c.nombre AS categoria_nombre FROM producto p LEFT JOIN categorias c ON p.categoria_id = c.id WHERE p.state = 1 ORDER BY p.stock_actual DESC LIMIT @lim"
+                Using cmd As New MySqlCommand(sql, conn)
+                    cmd.Parameters.AddWithValue("@lim", limite)
+                    Using reader = cmd.ExecuteReader()
+                        While reader.Read()
+                            lista.Add(Map(reader))
+                        End While
+                    End Using
+                End Using
+            End Using
+            Return lista
+        End Function
 
         Private Shared Sub AddParams(cmd As MySqlCommand, p As Producto)
             cmd.Parameters.AddWithValue("@sku", AESUtil.Encriptar(p.Sku))
