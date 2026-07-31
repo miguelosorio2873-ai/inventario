@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net11.0-windows</TargetFramework>
+    <TargetFramework>net8.0-windows</TargetFramework>
     <RootNamespace>inventario_visual</RootNamespace>
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>disable</ImplicitUsings>
