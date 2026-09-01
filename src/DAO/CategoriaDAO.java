@@ -11,7 +11,7 @@ public class CategoriaDAO {
 
     public List<Categoria> listarTodas() throws SQLException {
         List<Categoria> lista = new ArrayList<>();
-        String sql = "SELECT * FROM categorias ORDER BY nombre";
+        String sql = "SELECT * FROM categorias ORDER BY id DESC";
         try (Connection con = ConexionBD.conectar();
              PreparedStatement ps = con.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
@@ -25,7 +25,7 @@ public class CategoriaDAO {
         try (Connection con = ConexionBD.conectar();
              PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, AESUtil.encriptar(c.getNombre()));
-            ps.setString(2, AESUtil.encriptar(c.getDescripcion()));
+            ps.setString(2, c.getDescripcion() != null ? AESUtil.encriptar(c.getDescripcion()) : null);
             ps.executeUpdate();
         }
     }
@@ -52,8 +52,8 @@ public class CategoriaDAO {
 
     private Categoria mapear(ResultSet rs) throws SQLException {
         return new Categoria(
-            rs.getLong("id"), 
-            AESUtil.desencriptar(rs.getString("nombre")), 
+            rs.getLong("id"),
+            AESUtil.desencriptar(rs.getString("nombre")),
             AESUtil.desencriptar(rs.getString("descripcion"))
         );
     }

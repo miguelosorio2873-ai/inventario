@@ -10,12 +10,14 @@ import java.sql.SQLException;
 import Utils.SeguridadArgon2;
 import java.util.List;
 import java.util.Random;
+import Utils.UI;
 
 public class PanelUsuarios extends JPanel {
 
     private JTable tabla;
     private DefaultTableModel modelo;
     private UsuarioDAO dao = new UsuarioDAO();
+    private JLabel lblPie;
 
     public PanelUsuarios() {
         setBackground(new Color(24, 24, 27));
@@ -28,12 +30,12 @@ public class PanelUsuarios extends JPanel {
 
         JLabel titulo = new JLabel("Usuarios del Sistema");
         try {
-            com.formdev.flatlaf.extras.FlatSVGIcon icon = new com.formdev.flatlaf.extras.FlatSVGIcon(getClass().getResource("/IMG/users.svg")).derive(24, 24);
+            com.formdev.flatlaf.extras.FlatSVGIcon icon = new com.formdev.flatlaf.extras.FlatSVGIcon(getClass().getResource("/IMG/users.svg")).derive(32, 32);
             icon.setColorFilter(new com.formdev.flatlaf.extras.FlatSVGIcon.ColorFilter(c -> Color.WHITE));
             titulo.setIcon(icon);
             titulo.setIconTextGap(10);
         } catch (Exception e) {}
-        titulo.setFont(new Font("Segoe UI", Font.BOLD, 24));
+        titulo.setFont(UI.TITULO);
         titulo.setForeground(Color.WHITE);
 
         JPanel acciones = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
@@ -78,6 +80,12 @@ public class PanelUsuarios extends JPanel {
         scroll.getViewport().setBackground(new Color(39, 39, 42));
         add(scroll, BorderLayout.CENTER);
 
+        lblPie = new JLabel(" ");
+        lblPie.setFont(Utils.UI.TEXTO_NEGRITA);
+        lblPie.setForeground(new Color(16, 185, 129));
+        lblPie.setBorder(BorderFactory.createEmptyBorder(8, 2, 0, 2));
+        add(lblPie, BorderLayout.SOUTH);
+
         cargar();
     }
 
@@ -96,6 +104,11 @@ public class PanelUsuarios extends JPanel {
         } catch (SQLException e) {
             JOptionPane.showMessageDialog(this, "Error: " + e.getMessage());
         }
+        actualizarPie();
+    }
+
+    private void actualizarPie() {
+        if (lblPie != null) lblPie.setText("Usuarios: " + modelo.getRowCount());
     }
 
     private void dialogoUsuario(Usuario usr) {
@@ -106,7 +119,7 @@ public class PanelUsuarios extends JPanel {
         JPasswordField tfPass = new JPasswordField();
         tfPass.setBackground(new Color(45, 45, 45));
         tfPass.setForeground(Color.WHITE);
-        tfPass.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        tfPass.setFont(UI.CAMPO);
         tfPass.setCaretColor(new Color(16, 185, 129));
         tfPass.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(new Color(63, 63, 70)),
@@ -115,7 +128,7 @@ public class PanelUsuarios extends JPanel {
         JPasswordField tfPassConfirm = new JPasswordField();
         tfPassConfirm.setBackground(new Color(45, 45, 45));
         tfPassConfirm.setForeground(Color.WHITE);
-        tfPassConfirm.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        tfPassConfirm.setFont(UI.CAMPO);
         tfPassConfirm.setCaretColor(new Color(16, 185, 129));
         tfPassConfirm.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(new Color(63, 63, 70)),
@@ -124,14 +137,14 @@ public class PanelUsuarios extends JPanel {
         JComboBox<String> cbRol = new JComboBox<>(new String[]{"Estándar", "Admin"});
         cbRol.setBackground(new Color(45, 45, 45));
         cbRol.setForeground(Color.WHITE);
-        cbRol.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        cbRol.setFont(UI.CAMPO);
         cbRol.setEditable(true);
         if (ed && usr.getRol() != null) cbRol.setSelectedItem(usr.getRol());
 
         // Panel de Permisos Detallado
-        String[] modulos = {"Productos", "Categorias", "Clientes", "Proveedores", "Inventario", "Facturas", "Usuarios", "Reportes", "Configuracion"};
-        String[] acciones = {"Crear", "Editar", "Eliminar", "Exportar"};
-        char[] codigos = {'C', 'E', 'D', 'X'};
+        String[] modulos = {"Dashboard", "Ventas", "Productos", "Inventario", "Usuarios", "Reportes", "Bitacora", "Configuracion"};
+        String[] acciones = {"Ver", "Crear", "Editar", "Eliminar", "Exportar"};
+        char[] codigos = {'V', 'C', 'E', 'D', 'X'};
         
         JCheckBox[][] matrix = new JCheckBox[modulos.length][acciones.length];
         JPanel pPermisos = new JPanel();
@@ -145,13 +158,13 @@ public class PanelUsuarios extends JPanel {
             JLabel lbl = new JLabel(modulos[i]);
             lbl.setForeground(Color.WHITE);
             lbl.setPreferredSize(new Dimension(100, 20));
-            lbl.setFont(new Font("Segoe UI", Font.BOLD, 12));
+            lbl.setFont(UI.NOTA);
             row.add(lbl);
             
             for (int j = 0; j < acciones.length; j++) {
                 String etiqueta = obtenerEtiquetaAccion(modulos[i], codigos[j]);
                 matrix[i][j] = new JCheckBox(etiqueta);
-                matrix[i][j].setFont(new Font("Segoe UI", Font.PLAIN, 11));
+                matrix[i][j].setFont(Utils.UI.CAMPO);
                 matrix[i][j].setForeground(new Color(200, 200, 200));
                 matrix[i][j].setOpaque(false);
                 
@@ -294,6 +307,7 @@ public class PanelUsuarios extends JPanel {
 
                 if (ed) {
                     dao.actualizar(u);
+                    new DAO.BitacoraDAO().registrar("Usuarios", "Editar", "Usuario actualizado: " + u.getNombre() + " [" + u.getEmail() + "]");
                     // Actualizar sesión en vivo si el usuario editado es el actual
                     CX.SesionUsuario sesionActual = CX.SesionUsuario.getInstancia();
                     if (u.getId() == sesionActual.getUsuarioId()) {
@@ -328,6 +342,7 @@ public class PanelUsuarios extends JPanel {
 
                     u.setPassword(pass);
                     dao.insertar(u);
+                    new DAO.BitacoraDAO().registrar("Usuarios", "Crear", "Usuario creado: " + u.getNombre() + " [" + u.getEmail() + "] rol: " + u.getRol());
                 }
                 cargar();
                 break;
@@ -407,6 +422,7 @@ public class PanelUsuarios extends JPanel {
                     }
 
                     dao.cambiarPassword(id, pass);
+                    new DAO.BitacoraDAO().registrar("Usuarios", "Editar", "Contraseña cambiada para usuario ID: " + id);
                     JOptionPane.showMessageDialog(this, "✅ Contraseña actualizada.");
                     break;
                 }
@@ -423,7 +439,9 @@ public class PanelUsuarios extends JPanel {
         int r = JOptionPane.showConfirmDialog(this, "¿Eliminar usuario?", "Confirmar", JOptionPane.YES_NO_OPTION);
         if (r == JOptionPane.YES_OPTION) {
             try {
+                String nombre = (String) modelo.getValueAt(row, 1);
                 dao.eliminar((long) modelo.getValueAt(row, 0));
+                new DAO.BitacoraDAO().registrar("Usuarios", "Eliminar", "Usuario eliminado: " + nombre + " [ID: " + modelo.getValueAt(row, 0) + "]");
                 cargar();
             } catch (SQLException e) { JOptionPane.showMessageDialog(this, e.getMessage()); }
         }
@@ -444,13 +462,11 @@ public class PanelUsuarios extends JPanel {
                 if (codigo == 'E') return "Ajuste";
                 if (codigo == 'D') return "Salida";
                 break;
-            case "Facturas":
+            case "Ventas":
                 if (codigo == 'C') return "Emitir";
                 if (codigo == 'E') return "Pagar";
                 if (codigo == 'D') return "Anular";
                 break;
-            case "Clientes":
-            case "Proveedores":
             case "Usuarios":
                 if (codigo == 'C') return "Registrar";
                 break;
@@ -463,25 +479,28 @@ public class PanelUsuarios extends JPanel {
             case 'C': return "Crear";
             case 'E': return "Editar";
             case 'D': return "Eliminar";
+            case 'V': return "Ver";
         }
         return "";
     }
 
     private boolean esAccionAplicable(String modulo, char codigo) {
+        if (codigo == 'V') return !"Dashboard".equals(modulo); // Ver se aplica a todos excepto Dashboard
         switch (modulo) {
+            case "Dashboard":
+                return false; // Panel de inicio: siempre visible, sin acciones
             case "Reportes":
                 return codigo == 'X'; // Solo Exportar
             case "Configuracion":
                 return codigo == 'E'; // Solo Editar/Modificar
-            case "Facturas":
+            case "Ventas":
                 return codigo == 'C' || codigo == 'E' || codigo == 'D';
             case "Inventario":
                 return codigo == 'C' || codigo == 'E' || codigo == 'D';
             case "Productos":
                 return codigo == 'C' || codigo == 'E' || codigo == 'D';
-            case "Categorias":
-            case "Clientes":
-            case "Proveedores":
+            case "Bitacora":
+                return codigo == 'C' || codigo == 'E' || codigo == 'D';
             case "Usuarios":
                 return codigo == 'C' || codigo == 'E' || codigo == 'D'; // Crear, Editar, Eliminar
         }

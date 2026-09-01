@@ -4,3 +4,12 @@
 .vscode/
 *.class
 *.log
+
+# Configuración sensible (credenciales de base de datos)
+config/db.properties
+
+# Librerías / dependencias binarias (se regeneran con Maven/Gradle)
+*.jar
+
+# Copias de seguridad y bases de datos duplicadas
+*_backup_previo.db

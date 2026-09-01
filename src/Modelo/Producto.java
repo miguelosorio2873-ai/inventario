@@ -7,10 +7,11 @@ public class Producto {
     private String nombre;
     private String descripcion;
     private double precioVenta;
-    private double costoPromedio;
-    private double stockMinimo;
     private boolean state;
     private String imagen;
+    private String presentacion;
+    private double unidadesPresentacion;
+    private double costoPresentacion;
     // Campo calculado
     private String categoriaNombre;
     private double stockActual;
@@ -35,11 +36,8 @@ public class Producto {
     public double getPrecioVenta() { return precioVenta; }
     public void setPrecioVenta(double precioVenta) { this.precioVenta = precioVenta; }
 
-    public double getCostoPromedio() { return costoPromedio; }
-    public void setCostoPromedio(double costoPromedio) { this.costoPromedio = costoPromedio; }
-
-    public double getStockMinimo() { return stockMinimo; }
-    public void setStockMinimo(double stockMinimo) { this.stockMinimo = stockMinimo; }
+    /** Costo por unidad: equivalente al costo calculado desde la presentación. */
+    public double getCostoPromedio() { return getCostoPorUnidad(); }
 
     public boolean isState() { return state; }
     public void setState(boolean state) { this.state = state; }
@@ -52,4 +50,24 @@ public class Producto {
 
     public double getStockActual() { return stockActual; }
     public void setStockActual(double stockActual) { this.stockActual = stockActual; }
+
+    public String getPresentacion() { return presentacion; }
+    public void setPresentacion(String presentacion) { this.presentacion = presentacion; }
+
+    public double getUnidadesPresentacion() { return unidadesPresentacion; }
+    public void setUnidadesPresentacion(double unidadesPresentacion) { this.unidadesPresentacion = unidadesPresentacion; }
+
+    public double getCostoPresentacion() { return costoPresentacion; }
+    public void setCostoPresentacion(double costoPresentacion) { this.costoPresentacion = costoPresentacion; }
+
+    /** Costo por unidad = costo de la presentación ÷ unidades de la presentación. */
+    public double getCostoPorUnidad() {
+        double un = (unidadesPresentacion > 0) ? unidadesPresentacion : 1;
+        return costoPresentacion / un;
+    }
+
+    /** Ganancia por unidad = precio de venta − costo por unidad. */
+    public double getGananciaPorUnidad() {
+        return precioVenta - getCostoPorUnidad();
+    }
 }

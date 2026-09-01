@@ -11,7 +11,7 @@ public class ProveedorDAO {
 
     public List<Proveedor> listarTodos() throws SQLException {
         List<Proveedor> lista = new ArrayList<>();
-        String sql = "SELECT * FROM proveedor ORDER BY nombre_empresa";
+        String sql = "SELECT * FROM proveedor ORDER BY id DESC";
         try (Connection con = ConexionBD.conectar();
              PreparedStatement ps = con.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
@@ -22,11 +22,14 @@ public class ProveedorDAO {
 
     public List<Proveedor> buscar(String texto) throws SQLException {
         List<Proveedor> lista = new ArrayList<>();
-        String sql = "SELECT * FROM proveedor WHERE nombre_empresa LIKE ? OR nit_cedula LIKE ? ORDER BY nombre_empresa";
+        String enc = AESUtil.encriptar(texto);
+        String sql = "SELECT * FROM proveedor WHERE nombre_empresa LIKE ? OR nit_cedula LIKE ? OR nombre_empresa = ? OR nit_cedula = ? ORDER BY id DESC";
         try (Connection con = ConexionBD.conectar();
              PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, "%" + texto + "%");
-            ps.setString(2, AESUtil.encriptar(texto)); // Búsqueda exacta de NIT encriptado
+            ps.setString(2, "%" + texto + "%");
+            ps.setString(3, enc);
+            ps.setString(4, enc);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) lista.add(mapear(rs));
             }

@@ -1,6 +1,8 @@
 package Modelo;
 
 import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Factura {
     private long id;
@@ -15,6 +17,8 @@ public class Factura {
     private double total;
     // Campos calculados
     private String clienteNombre;
+    // Detalle (line items)
+    private List<DetalleFactura> detalles = new ArrayList<>();
 
     public Factura() {}
 
@@ -33,7 +37,15 @@ public class Factura {
     public Timestamp getFechaEmision() { return fechaEmision; }
     public void setFechaEmision(Timestamp fechaEmision) { this.fechaEmision = fechaEmision; }
 
-    public String getMetodoPago() { return metodoPago; }
+    public String getMetodoPago() {
+        if (metodoPago == null) return null;
+        return metodoPago
+            .replace("Ã³", "ó")
+            .replace("Ã©", "é")
+            .replace("Ã­", "í")
+            .replace("Ã¡", "á")
+            .replace("Ãº", "ú");
+    }
     public void setMetodoPago(String metodoPago) { this.metodoPago = metodoPago; }
 
     public String getEstado() { return estado; }
@@ -50,4 +62,8 @@ public class Factura {
 
     public String getClienteNombre() { return clienteNombre; }
     public void setClienteNombre(String clienteNombre) { this.clienteNombre = clienteNombre; }
+
+    public List<DetalleFactura> getDetalles() { return detalles; }
+    public void setDetalles(List<DetalleFactura> detalles) { this.detalles = detalles; }
+    public void agregarDetalle(DetalleFactura df) { this.detalles.add(df); }
 }

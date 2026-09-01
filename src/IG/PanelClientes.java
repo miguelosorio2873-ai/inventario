@@ -2,6 +2,7 @@ package IG;
 
 import DAO.ClienteDAO;
 import Modelo.Cliente;
+import Utils.UI;
 import javax.swing.*;
 import javax.swing.table.*;
 import java.awt.*;
@@ -15,6 +16,7 @@ public class PanelClientes extends JPanel {
     private DefaultTableModel modelo;
     private JTextField campoBuscar;
     private ClienteDAO dao = new ClienteDAO();
+    private JLabel lblPie;
 
     public PanelClientes() {
         setBackground(new Color(24, 24, 27));
@@ -26,12 +28,12 @@ public class PanelClientes extends JPanel {
 
         JLabel titulo = new JLabel("Clientes");
         try {
-            com.formdev.flatlaf.extras.FlatSVGIcon icon = new com.formdev.flatlaf.extras.FlatSVGIcon(getClass().getResource("/IMG/users.svg")).derive(24, 24);
+            com.formdev.flatlaf.extras.FlatSVGIcon icon = new com.formdev.flatlaf.extras.FlatSVGIcon(getClass().getResource("/IMG/users.svg")).derive(32, 32);
             icon.setColorFilter(new com.formdev.flatlaf.extras.FlatSVGIcon.ColorFilter(c -> Color.WHITE));
             titulo.setIcon(icon);
             titulo.setIconTextGap(10);
         } catch (Exception e) {}
-        titulo.setFont(new Font("Segoe UI", Font.BOLD, 24));
+        titulo.setFont(Utils.UI.TITULO);
         titulo.setForeground(Color.WHITE);
 
         JPanel acciones = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
@@ -39,7 +41,7 @@ public class PanelClientes extends JPanel {
 
         campoBuscar = PanelProductos.crearCampo("", 100);
         campoBuscar.setColumns(20);
-        campoBuscar.putClientProperty("JTextField.placeholderText", "Buscar por nombre o cédula...");
+        campoBuscar.putClientProperty("JTextField.placeholderText", "Buscar por cualquier característica...");
         campoBuscar.addKeyListener(new KeyAdapter() {
             public void keyReleased(KeyEvent e) { buscar(); }
         });
@@ -71,6 +73,11 @@ public class PanelClientes extends JPanel {
         scroll.setBorder(BorderFactory.createEmptyBorder());
         scroll.getViewport().setBackground(new Color(39, 39, 42));
         add(scroll, BorderLayout.CENTER);
+        lblPie = new JLabel(" ");
+        lblPie.setFont(Utils.UI.TEXTO_NEGRITA);
+        lblPie.setForeground(new Color(16, 185, 129));
+        lblPie.setBorder(BorderFactory.createEmptyBorder(8, 2, 0, 2));
+        add(lblPie, BorderLayout.SOUTH);
         cargar();
     }
 
@@ -80,15 +87,17 @@ public class PanelClientes extends JPanel {
             for (Cliente c : dao.listarTodos())
                 modelo.addRow(new Object[]{c.getId(), c.getCedula(), c.getNombre(), c.getCorreo(), c.getTelefono()});
         } catch (SQLException e) { JOptionPane.showMessageDialog(this, "Error: " + e.getMessage()); }
+        actualizarPie();
     }
 
     private void buscar() {
         String t = campoBuscar.getText().trim();
         modelo.setRowCount(0);
         try {
-            for (Cliente c : t.isEmpty() ? dao.listarTodos() : dao.buscar(t))
+            for (Cliente c : t.isEmpty() ? dao.listarTodos() : dao.buscarEnMemoria(t))
                 modelo.addRow(new Object[]{c.getId(), c.getCedula(), c.getNombre(), c.getCorreo(), c.getTelefono()});
         } catch (SQLException e) { JOptionPane.showMessageDialog(this, "Error: " + e.getMessage()); }
+        actualizarPie();
     }
 
     private void dialogo(Cliente cli) {
@@ -118,6 +127,8 @@ public class PanelClientes extends JPanel {
                 c.setTelefono(tfTel.getText().trim());
                 if (c.getNombre().isEmpty()) { JOptionPane.showMessageDialog(this, "Nombre obligatorio"); return; }
                 if (ed) dao.actualizar(c); else dao.insertar(c);
+                new DAO.BitacoraDAO().registrar("Clientes", ed ? "Editar" : "Crear",
+                    (ed ? "Cliente actualizado: " : "Cliente creado: ") + c.getNombre() + " [Cedula: " + c.getCedula() + "]");
                 cargar();
             } catch (SQLException e) { CX.ConexionBD.errorManager(e); }
         }
@@ -140,7 +151,16 @@ public class PanelClientes extends JPanel {
         if (row < 0) { JOptionPane.showMessageDialog(this, "Seleccione un cliente."); return; }
         long id = (long) modelo.getValueAt(row, 0);
         if (JOptionPane.showConfirmDialog(this, "¿Eliminar?", "Confirmar", JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
-            try { dao.eliminar(id); cargar(); } catch (SQLException e) { CX.ConexionBD.errorManager(e); }
+            try {
+                String nombre = (String) modelo.getValueAt(row, 2);
+                dao.eliminar(id);
+                new DAO.BitacoraDAO().registrar("Clientes", "Eliminar", "Cliente eliminado: " + nombre + " [ID: " + id + "]");
+                cargar();
+            } catch (SQLException e) { CX.ConexionBD.errorManager(e); }
         }
+    }
+
+    private void actualizarPie() {
+        if (lblPie != null) lblPie.setText("Clientes: " + modelo.getRowCount());
     }
 }

@@ -11,7 +11,7 @@ public class ClienteDAO {
 
     public List<Cliente> listarTodos() throws SQLException {
         List<Cliente> lista = new ArrayList<>();
-        String sql = "SELECT * FROM cliente ORDER BY nombre";
+        String sql = "SELECT * FROM cliente ORDER BY id DESC";
         try (Connection con = ConexionBD.conectar();
              PreparedStatement ps = con.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
@@ -22,16 +22,56 @@ public class ClienteDAO {
 
     public List<Cliente> buscar(String texto) throws SQLException {
         List<Cliente> lista = new ArrayList<>();
-        String sql = "SELECT * FROM cliente WHERE nombre LIKE ? OR cedula LIKE ? ORDER BY nombre";
+        String enc = AESUtil.encriptar(texto);
+        String sql = "SELECT * FROM cliente WHERE nombre LIKE ? OR cedula LIKE ? OR nombre = ? OR cedula = ? ORDER BY id DESC";
         try (Connection con = ConexionBD.conectar();
              PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setString(1, "%" + texto + "%"); // Búsqueda LIKE por nombre (no funcionará si está encriptado, pero mantenemos compatibilidad por ahora)
-            ps.setString(2, AESUtil.encriptar(texto)); // Búsqueda exacta de cédula encriptada 
+            ps.setString(1, "%" + texto + "%");
+            ps.setString(2, "%" + texto + "%");
+            ps.setString(3, enc);
+            ps.setString(4, enc);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) lista.add(mapear(rs));
             }
         }
         return lista;
+    }
+
+    /**
+     * Busca un cliente por su fecha de cédula encriptada. Devuelve null si no existe.
+     */
+    public Cliente buscarPorCedula(String cedula) throws SQLException {
+        String enc = AESUtil.encriptar(cedula);
+        String sql = "SELECT * FROM cliente WHERE cedula = ? LIMIT 1";
+        try (Connection con = ConexionBD.conectar();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, enc);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return mapear(rs);
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Busca por nombre o cédula en memoria. Las columnas están encriptadas (AES),
+     * por lo que no se puede usar LIKE de texto plano; se desencripta y se filtra.
+     */
+    public List<Cliente> buscarEnMemoria(String texto) throws SQLException {
+        String q = texto == null ? "" : texto.trim().toLowerCase();
+        List<Cliente> todos = listarTodos();
+        if (q.isEmpty()) return todos;
+        List<Cliente> res = new ArrayList<>();
+        for (Cliente c : todos) {
+            StringBuilder s = new StringBuilder();
+            if (c.getNombre() != null) s.append(c.getNombre()).append(' ');
+            if (c.getCedula() != null) s.append(c.getCedula()).append(' ');
+            if (c.getCorreo() != null) s.append(c.getCorreo()).append(' ');
+            if (c.getTelefono() != null) s.append(c.getTelefono()).append(' ');
+            s.append(c.getId()).append(' ');
+            if (s.toString().toLowerCase().contains(q)) res.add(c);
+        }
+        return res;
     }
 
     public void insertar(Cliente c) throws SQLException {

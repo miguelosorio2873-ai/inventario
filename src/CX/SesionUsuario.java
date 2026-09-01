@@ -59,23 +59,30 @@ public class SesionUsuario {
     }
 
     public boolean tienePermiso(String modulo) {
+        // Admin siempre tiene acceso total al modulo, ignorando permisos detallados.
+        if ("Admin".equalsIgnoreCase(rol) || "Administrador".equalsIgnoreCase(rol)) return true;
+
         String p = normalizar(permisos);
         String m = normalizar(modulo);
-        
+
+        // El acceso al modulo (verlo en el menu) depende SOLO del permiso de "Ver" (V).
+        // Desactivar "Ver" oculta el modulo aunque tenga permisos de accion (C/E/D/X).
         int idx = p.indexOf(m + ":");
         if (idx != -1) {
             int endIdx = p.indexOf(",", idx);
             String sub = (endIdx == -1) ? p.substring(idx) : p.substring(idx, endIdx);
-            String actionsPart = sub.substring(sub.indexOf(":") + 1);
-            return !actionsPart.isEmpty(); // Si tiene cualquier letra (C, E, D, X), tiene permiso de entrar
+            String ac = sub.substring(sub.indexOf(":") + 1);
+            return ac.contains("V");
         }
-        
-        if ("Admin".equalsIgnoreCase(rol) || "Administrador".equalsIgnoreCase(rol)) return true;
+
         return p.contains(m);
     }
 
     public boolean tienePermiso(String modulo, String accion) {
-        if (permisos == null && !("Admin".equalsIgnoreCase(rol) || "Administrador".equalsIgnoreCase(rol))) return false;
+        // Admin siempre tiene todos los permisos, ignorando permisos detallados.
+        if ("Admin".equalsIgnoreCase(rol) || "Administrador".equalsIgnoreCase(rol)) return true;
+
+        if (permisos == null) return false;
         
         String p = normalizar(permisos);
         String m = normalizar(modulo);
@@ -98,10 +105,7 @@ public class SesionUsuario {
             return actionsPart.contains(a);
         }
         
-        // Prioridad 2: Si es Administrador y no hay restricción específica, tiene permiso
-        if ("Admin".equalsIgnoreCase(rol) || "Administrador".equalsIgnoreCase(rol)) return true;
-        
-        // Prioridad 3: Formato antiguo o permiso general por nombre
+        // Prioridad 2: Formato antiguo o permiso general por nombre
         return p.contains(m);
     }
 }

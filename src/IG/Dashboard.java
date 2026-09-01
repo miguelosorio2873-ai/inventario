@@ -1,6 +1,7 @@
 package IG;
 
 import CX.SesionUsuario;
+import Utils.UI;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
@@ -27,6 +28,7 @@ public class Dashboard extends JFrame {
 
         JPanel mainPanel = new JPanel(new BorderLayout());
         mainPanel.setBackground(COLOR_FONDO);
+        mainPanel.setDoubleBuffered(true);
 
         // ── Top Bar ──
         JPanel topBar = crearTopBar();
@@ -44,7 +46,7 @@ public class Dashboard extends JFrame {
 
         setContentPane(mainPanel);
 
-        // Mostrar inicio por defecto
+        // Mostrar Dashboard por defecto
         mostrarPanel(new PanelInicio());
 
         // Drag support
@@ -71,12 +73,12 @@ public class Dashboard extends JFrame {
 
         JLabel logo = new JLabel("Inventario Pro");
         try {
-            com.formdev.flatlaf.extras.FlatSVGIcon boxIcon = new com.formdev.flatlaf.extras.FlatSVGIcon(getClass().getResource("/IMG/box.svg")).derive(20, 20);
+            com.formdev.flatlaf.extras.FlatSVGIcon boxIcon = new com.formdev.flatlaf.extras.FlatSVGIcon("IMG/box.svg").derive(32, 32);
             boxIcon.setColorFilter(new com.formdev.flatlaf.extras.FlatSVGIcon.ColorFilter(c -> new Color(16, 185, 129)));
             logo.setIcon(boxIcon);
             logo.setIconTextGap(8);
         } catch (Exception e) {}
-        logo.setFont(new Font("Segoe UI", Font.BOLD, 18));
+        logo.setFont(Utils.UI.TITULO);
         logo.setForeground(new Color(16, 185, 129));
 
         JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 8));
@@ -85,21 +87,21 @@ public class Dashboard extends JFrame {
         SesionUsuario sesion = SesionUsuario.getInstancia();
         JLabel userLabel = new JLabel(" " + (sesion.getNombreUsuario() != null ? sesion.getNombreUsuario() : "Admin"));
         try {
-            com.formdev.flatlaf.extras.FlatSVGIcon userIcon = new com.formdev.flatlaf.extras.FlatSVGIcon(getClass().getResource("/IMG/users.svg"));
+            com.formdev.flatlaf.extras.FlatSVGIcon userIcon = new com.formdev.flatlaf.extras.FlatSVGIcon("IMG/users.svg");
             userIcon.setColorFilter(new com.formdev.flatlaf.extras.FlatSVGIcon.ColorFilter(color -> new Color(180, 180, 180)));
             userLabel.setIcon(userIcon);
         } catch(Exception ex){}
-        userLabel.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        userLabel.setFont(Utils.UI.TEXTO);
         userLabel.setForeground(new Color(180, 180, 180));
 
         JLabel clockLabel = new JLabel();
-        clockLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        clockLabel.setFont(Utils.UI.TEXTO_NEGRITA);
         clockLabel.setForeground(new Color(16, 185, 129));
         javax.swing.Timer timer = new javax.swing.Timer(1000, e -> {
-            clockLabel.setText(new java.text.SimpleDateFormat("dd/MM/yyyy HH:mm:ss").format(new java.util.Date()));
+            clockLabel.setText(new java.text.SimpleDateFormat("dd/MM/yyyy hh:mm:ss a").format(new java.util.Date()));
         });
         timer.start();
-        clockLabel.setText(new java.text.SimpleDateFormat("dd/MM/yyyy HH:mm:ss").format(new java.util.Date()));
+        clockLabel.setText(new java.text.SimpleDateFormat("dd/MM/yyyy hh:mm:ss a").format(new java.util.Date()));
 
         JButton btnMin = crearBotonControl("minus.svg", new Color(250, 204, 21));
         btnMin.addActionListener(e -> setState(Frame.ICONIFIED));
@@ -119,6 +121,14 @@ public class Dashboard extends JFrame {
             if (r == JOptionPane.YES_OPTION) System.exit(0);
         });
 
+        // Tasa BCV
+        JLabel tasaLabel = new JLabel();
+        tasaLabel.setFont(Utils.UI.BOTON);
+        tasaLabel.setForeground(new Color(245, 158, 11));
+        actualizarTasaLabel(tasaLabel);
+
+        rightPanel.add(tasaLabel);
+        rightPanel.add(Box.createRigidArea(new Dimension(15, 0)));
         rightPanel.add(clockLabel);
         rightPanel.add(Box.createRigidArea(new Dimension(15, 0)));
         rightPanel.add(userLabel);
@@ -135,11 +145,11 @@ public class Dashboard extends JFrame {
     private JButton crearBotonControl(String iconName, Color hoverColor) {
         JButton btn = new JButton();
         try {
-            com.formdev.flatlaf.extras.FlatSVGIcon icon = new com.formdev.flatlaf.extras.FlatSVGIcon(getClass().getResource("/IMG/" + iconName)).derive(14, 14);
+            com.formdev.flatlaf.extras.FlatSVGIcon icon = new com.formdev.flatlaf.extras.FlatSVGIcon("IMG/" + iconName).derive(14, 14);
             icon.setColorFilter(new com.formdev.flatlaf.extras.FlatSVGIcon.ColorFilter(c -> new Color(150, 150, 150)));
             btn.setIcon(icon);
         } catch (Exception e) {}
-        btn.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        btn.setFont(Utils.UI.BOTON);
         btn.setForeground(new Color(150, 150, 150));
         btn.setBackground(new Color(17, 24, 39));
         btn.setBorder(BorderFactory.createEmptyBorder(6, 12, 6, 12));
@@ -148,7 +158,7 @@ public class Dashboard extends JFrame {
         btn.addMouseListener(new MouseAdapter() {
             public void mouseEntered(MouseEvent e) { 
                 try {
-                    com.formdev.flatlaf.extras.FlatSVGIcon icon = new com.formdev.flatlaf.extras.FlatSVGIcon(getClass().getResource("/IMG/" + iconName)).derive(14, 14);
+                    com.formdev.flatlaf.extras.FlatSVGIcon icon = new com.formdev.flatlaf.extras.FlatSVGIcon("IMG/" + iconName).derive(14, 14);
                     icon.setColorFilter(new com.formdev.flatlaf.extras.FlatSVGIcon.ColorFilter(c -> hoverColor));
                     btn.setIcon(icon);
                 } catch (Exception ex) {}
@@ -156,7 +166,7 @@ public class Dashboard extends JFrame {
             }
             public void mouseExited(MouseEvent e) { 
                 try {
-                    com.formdev.flatlaf.extras.FlatSVGIcon icon = new com.formdev.flatlaf.extras.FlatSVGIcon(getClass().getResource("/IMG/" + iconName)).derive(14, 14);
+                    com.formdev.flatlaf.extras.FlatSVGIcon icon = new com.formdev.flatlaf.extras.FlatSVGIcon("IMG/" + iconName).derive(14, 14);
                     icon.setColorFilter(new com.formdev.flatlaf.extras.FlatSVGIcon.ColorFilter(c -> new Color(150, 150, 150)));
                     btn.setIcon(icon);
                 } catch (Exception ex) {}
@@ -195,7 +205,7 @@ public class Dashboard extends JFrame {
         sidebar.setBorder(BorderFactory.createEmptyBorder(15, 0, 15, 0));
 
         JLabel menuTitle = new JLabel("  MENÚ PRINCIPAL");
-        menuTitle.setFont(new Font("Segoe UI", Font.BOLD, 11));
+        menuTitle.setFont(Utils.UI.NOTA);
         menuTitle.setForeground(new Color(100, 100, 100));
         menuTitle.setAlignmentX(Component.LEFT_ALIGNMENT);
         menuTitle.setMaximumSize(new Dimension(220, 30));
@@ -203,16 +213,14 @@ public class Dashboard extends JFrame {
         sidebar.add(menuTitle);
 
         String[][] items = {
-            {"home.svg", "Inicio"},
-            {"box.svg", "Productos"},
-            {"tags.svg", "Categorias"},
-            {"users.svg", "Clientes"},
-            {"truck.svg", "Proveedores"},
-            {"chart-bar.svg", "Inventario"},
-            {"file-invoice.svg", "Facturas"},
-            {"users.svg", "Usuarios"},
-            {"chart-pie.svg", "Reportes"},
-            {"cog.svg", "Configuracion"}
+            {"home.svg", "Dashboard", ""},
+            {"file-invoice.svg", "Ventas", "Ventas"},
+            {"box.svg", "Productos", "Productos"},
+            {"chart-bar.svg", "Inventario", "Inventario"},
+            {"users.svg", "Usuarios", "Usuarios"},
+            {"chart-pie.svg", "Reportes", "Reportes"},
+            {"scroll.svg", "Bitacora", "Bitacora"},
+            {"cog.svg", "Configuracion", "Configuracion"}
         };
 
         SesionUsuario sesion = SesionUsuario.getInstancia();
@@ -220,29 +228,24 @@ public class Dashboard extends JFrame {
 
         for (String[] item : items) {
             String modulo = item[1];
+            String permiso = item[2];
             
-            boolean tienePerm = sesion.tienePermiso(modulo);
-            System.out.println("[DEBUG] Módulo: " + modulo + " | Visible: " + tienePerm);
+            boolean tienePerm = permiso.isEmpty() || sesion.tienePermiso(permiso);
             
             JButton btn = crearBotonMenu(item[1], item[0]);
             
-            // Inicio siempre activo. Otros dependen de permisos.
-            if (!"Inicio".equals(modulo)) {
-                btn.setEnabled(tienePerm);
-            }
+            btn.setVisible(tienePerm);
             
             btn.addActionListener(e -> {
                 setBotonActivo(btn);
                 switch (item[1]) {
-                    case "Inicio": mostrarPanel(new PanelInicio()); break;
+                    case "Dashboard": mostrarPanel(new PanelInicio()); break;
+                    case "Ventas": mostrarPanel(new PanelFacturas()); break;
                     case "Productos": mostrarPanel(new PanelProductos()); break;
-                    case "Categorias": mostrarPanel(new PanelCategorias()); break;
-                    case "Clientes": mostrarPanel(new PanelClientes()); break;
-                    case "Proveedores": mostrarPanel(new PanelProveedores()); break;
                     case "Inventario": mostrarPanel(new PanelInventario()); break;
-                    case "Facturas": mostrarPanel(new PanelFacturas()); break;
                     case "Usuarios": mostrarPanel(new PanelUsuarios()); break;
                     case "Reportes": mostrarPanel(new PanelReportes()); break;
+                    case "Bitacora": mostrarPanel(new PanelBitacora()); break;
                     case "Configuracion": mostrarPanel(new PanelConfiguracion()); break;
                 }
             });
@@ -264,7 +267,12 @@ public class Dashboard extends JFrame {
         btnLogout.addActionListener(e -> {
             int r = JOptionPane.showConfirmDialog(this, "¿Cerrar sesión?", "Confirmar", JOptionPane.YES_NO_OPTION);
             if (r == JOptionPane.YES_OPTION) {
-                SesionUsuario.getInstancia().cerrarSesion();
+                SesionUsuario su = SesionUsuario.getInstancia();
+                if (su.getNombreUsuario() != null) {
+                    new DAO.BitacoraDAO().registrar("Login", "Cerrar Sesión",
+                        "Cierre de sesión: " + su.getNombreUsuario());
+                }
+                su.cerrarSesion();
                 new LOG().setVisible(true);
                 dispose();
             }
@@ -277,7 +285,7 @@ public class Dashboard extends JFrame {
     private JButton crearBotonMenu(String texto, String iconName) {
         JButton btn = new JButton("  " + texto);
         try {
-            com.formdev.flatlaf.extras.FlatSVGIcon icon = new com.formdev.flatlaf.extras.FlatSVGIcon(getClass().getResource("/IMG/" + iconName));
+            com.formdev.flatlaf.extras.FlatSVGIcon icon = new com.formdev.flatlaf.extras.FlatSVGIcon("IMG/" + iconName);
             if (icon != null) {
                 icon = icon.derive(20, 20);
                 icon.setColorFilter(new com.formdev.flatlaf.extras.FlatSVGIcon.ColorFilter(color -> new Color(180, 180, 180)));
@@ -286,7 +294,7 @@ public class Dashboard extends JFrame {
         } catch (Exception ex) {
             System.err.println("No se encontro icono: " + iconName);
         }
-        btn.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        btn.setFont(Utils.UI.BOTON);
         btn.setForeground(new Color(180, 180, 180));
         btn.setBackground(COLOR_SIDEBAR);
         btn.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -350,6 +358,13 @@ public class Dashboard extends JFrame {
         panelContenido.add(panel, BorderLayout.CENTER);
         panelContenido.revalidate();
         panelContenido.repaint();
+    }
+
+    private void actualizarTasaLabel(JLabel label) {
+        double dolar = Utils.Config.getTasaVES();
+        double euro = Utils.Config.getTasaEuroVES();
+        String euroStr = euro > 0 ? String.format("Bs %.2f", euro) : "Bs -- ";
+        label.setText("BCV | $ " + String.format("%.2f", dolar) + " | € " + euroStr);
     }
 
     public void setDatosUsuario(String nombre, String tipo, String cedula) {

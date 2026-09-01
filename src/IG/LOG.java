@@ -10,6 +10,7 @@ import java.awt.event.*;
 import java.sql.SQLException;
 import java.util.Random;
 import Utils.SeguridadArgon2;
+import Utils.UI;
 
 public class LOG extends JFrame {
 
@@ -33,6 +34,8 @@ public class LOG extends JFrame {
                 g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
             }
         };
+        mainPanel.setBackground(new Color(30, 30, 30));
+        mainPanel.setDoubleBuffered(true);
 
         // ── Panel Izquierdo (Branding) ──
         JPanel brandPanel = new JPanel() {
@@ -68,13 +71,13 @@ public class LOG extends JFrame {
         brandPanel.add(iconLabel, gbc);
 
         JLabel titleLabel = new JLabel("Inventario Pro");
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 32));
+        titleLabel.setFont(UI.TITULO);
         titleLabel.setForeground(Color.WHITE);
         gbc.gridy = 1;
         brandPanel.add(titleLabel, gbc);
 
         JLabel subtitleLabel = new JLabel("<html><center>Sistema Integral de Gestión<br>de Inventario</center></html>");
-        subtitleLabel.setFont(new Font("Segoe UI", Font.PLAIN, 16));
+        subtitleLabel.setFont(UI.TEXTO);
         subtitleLabel.setForeground(new Color(255, 255, 255, 200));
         subtitleLabel.setHorizontalAlignment(SwingConstants.CENTER);
         gbc.gridy = 2;
@@ -82,7 +85,7 @@ public class LOG extends JFrame {
         brandPanel.add(subtitleLabel, gbc);
 
         JLabel versionLabel = new JLabel("v1.0.0");
-        versionLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        versionLabel.setFont(UI.NOTA);
         versionLabel.setForeground(new Color(255, 255, 255, 150));
         gbc.gridy = 3;
         gbc.insets = new Insets(40, 20, 5, 20);
@@ -122,14 +125,14 @@ public class LOG extends JFrame {
         gc.insets = new Insets(8, 50, 8, 50);
 
         JLabel loginTitle = new JLabel("Iniciar Sesión");
-        loginTitle.setFont(new Font("Segoe UI", Font.BOLD, 26));
+        loginTitle.setFont(UI.TITULO);
         loginTitle.setForeground(Color.WHITE);
         gc.gridy = 1;
         gc.insets = new Insets(15, 50, 5, 50);
         loginPanel.add(loginTitle, gc);
 
         JLabel loginSub = new JLabel("Ingrese sus credenciales para continuar");
-        loginSub.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        loginSub.setFont(UI.NOTA);
         loginSub.setForeground(new Color(150, 150, 150));
         gc.gridy = 2;
         gc.insets = new Insets(0, 50, 20, 50);
@@ -146,6 +149,7 @@ public class LOG extends JFrame {
         emailField.setPreferredSize(new Dimension(250, 40));
         emailField.setBackground(new Color(45, 45, 45));
         emailField.setForeground(Color.WHITE);
+        emailField.setFont(UI.CAMPO);
         emailField.setCaretColor(new Color(16, 185, 129));
         emailField.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(new Color(60, 60, 60), 1, true),
@@ -172,6 +176,7 @@ public class LOG extends JFrame {
         passwordField.setPreferredSize(new Dimension(250, 40));
         passwordField.setBackground(new Color(45, 45, 45));
         passwordField.setForeground(Color.WHITE);
+        passwordField.setFont(UI.CAMPO);
         passwordField.setCaretColor(new Color(16, 185, 129));
         passwordField.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(new Color(60, 60, 60), 1, true),
@@ -205,7 +210,7 @@ public class LOG extends JFrame {
                 super.paintComponent(g);
             }
         };
-        loginButton.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        loginButton.setFont(UI.BOTON);
         loginButton.setForeground(Color.WHITE);
         loginButton.setPreferredSize(new Dimension(250, 42));
         loginButton.setContentAreaFilled(false);
@@ -220,7 +225,7 @@ public class LOG extends JFrame {
 
         // Recovery link
         JButton btnRecuperar = new JButton("¿Olvidaste tu contraseña?");
-        btnRecuperar.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        btnRecuperar.setFont(UI.NOTA);
         btnRecuperar.setForeground(new Color(16, 185, 129));
         btnRecuperar.setBorder(null);
         btnRecuperar.setContentAreaFilled(false);
@@ -261,7 +266,19 @@ public class LOG extends JFrame {
             Usuario user = dao.login(email, pass);
             if (user != null) {
                 SesionUsuario.getInstancia().iniciarSesion(user.getId(), user.getNombre(), user.getRol(), user.getPermisos());
-                new Dashboard().setVisible(true);
+                new DAO.BitacoraDAO().registrar("Login", "Iniciar Sesión",
+                    "Inicio de sesión: " + user.getNombre() + " [" + user.getEmail() + "] rol: " + user.getRol());
+                Dashboard dash = new Dashboard();
+                dash.setUndecorated(true);
+                GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
+                GraphicsDevice gd = ge.getDefaultScreenDevice();
+                if (gd.isFullScreenSupported()) {
+                    gd.setFullScreenWindow(dash);
+                } else {
+                    dash.setExtendedState(JFrame.MAXIMIZED_BOTH);
+                }
+                dash.setVisible(true);
+                SwingUtilities.invokeLater(dash::repaint);
                 this.dispose();
             }
         } catch (SQLException ex) {
@@ -343,6 +360,98 @@ public class LOG extends JFrame {
 
     public static void main(String[] args) {
         try { UIManager.setLookAndFeel(new FlatDarkLaf()); } catch (Exception e) {}
-        SwingUtilities.invokeLater(() -> new LOG().setVisible(true));
+        CX.ConexionBD.inicializarBaseDatos();
+        CX.ConexionBD.programarRespaldoAutomatico();
+        actualizarTasaSincrona();
+        SwingUtilities.invokeLater(() -> {
+            LOG login = new LOG();
+            login.setVisible(true);
+            login.repaint();
+        });
+    }
+
+    private static void actualizarTasaSincrona() {
+        try {
+            // Intento 1: java.net.http.HttpClient
+            java.net.http.HttpClient client = java.net.http.HttpClient.newBuilder()
+                .connectTimeout(java.time.Duration.ofSeconds(5))
+                .build();
+            java.net.http.HttpRequest request = java.net.http.HttpRequest.newBuilder()
+                .uri(java.net.URI.create("https://ve.dolarapi.com/v1/dolares"))
+                .header("Accept", "application/json")
+                .timeout(java.time.Duration.ofSeconds(8))
+                .GET()
+                .build();
+            java.net.http.HttpResponse<String> resp = client.send(request, java.net.http.HttpResponse.BodyHandlers.ofString());
+            parsearYGuardarTasa(resp.body());
+            return;
+        } catch (Exception e) {
+            System.out.println("HttpClient fallo, intentando con URLConnection: " + e.getMessage());
+        }
+
+        try {
+            // Intento 2: URLConnection (fallback)
+            java.net.URL url = new java.net.URL("https://ve.dolarapi.com/v1/dolares");
+            java.net.HttpURLConnection conn = (java.net.HttpURLConnection) url.openConnection();
+            conn.setConnectTimeout(5000);
+            conn.setReadTimeout(8000);
+            conn.setRequestProperty("Accept", "application/json");
+            java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.InputStreamReader(conn.getInputStream(), "UTF-8"));
+            StringBuilder sb = new StringBuilder();
+            String line;
+            while ((line = reader.readLine()) != null) sb.append(line);
+            reader.close();
+            parsearYGuardarTasa(sb.toString());
+        } catch (Exception e) {
+            System.out.println("No se pudo actualizar tasa: " + e.getMessage());
+        }
+    }
+
+    private static void parsearYGuardarTasa(String body) {
+        int idx = body.indexOf("\"promedio\"");
+        if (idx < 0) {
+            System.out.println("Campo 'promedio' no encontrado en respuesta");
+            return;
+        }
+        int colon = body.indexOf(':', idx);
+        int end = body.indexOf(',', colon);
+        if (end < 0) end = body.indexOf('}', colon);
+        if (colon < 0 || end < 0) {
+            System.out.println("Error parseando valor de promedio");
+            return;
+        }
+        double tasa = Double.parseDouble(body.substring(colon + 1, end).trim());
+        Utils.Config.setTasaVES(tasa);
+        Utils.Config.setHoraUltimaActualizacion(java.time.LocalTime.now());
+        System.out.println("Tasa BCV actualizada: Bs " + tasa);
+        actualizarEuro();
+     }
+
+    /** Obtiene tambien el precio del Euro oficial (BCV) y lo guarda en Config. */
+    private static void actualizarEuro() {
+        try {
+            java.net.http.HttpClient client = java.net.http.HttpClient.newBuilder()
+                .connectTimeout(java.time.Duration.ofSeconds(5))
+                .build();
+            java.net.http.HttpRequest request = java.net.http.HttpRequest.newBuilder()
+                .uri(java.net.URI.create("https://ve.dolarapi.com/v1/euros/oficial"))
+                .header("Accept", "application/json")
+                .timeout(java.time.Duration.ofSeconds(8))
+                .GET()
+                .build();
+            java.net.http.HttpResponse<String> resp = client.send(request, java.net.http.HttpResponse.BodyHandlers.ofString());
+            String body = resp.body();
+            int idx = body.indexOf("\"promedio\"");
+            if (idx < 0) return;
+            int colon = body.indexOf(':', idx);
+            int end = body.indexOf(',', colon);
+            if (end < 0) end = body.indexOf('}', colon);
+            if (colon < 0 || end < 0) return;
+            double euro = Double.parseDouble(body.substring(colon + 1, end).trim());
+            Utils.Config.setTasaEuroVES(euro);
+            System.out.println("Tasa Euro BCV actualizada: Bs " + euro);
+        } catch (Exception e) {
+            System.out.println("No se pudo actualizar tasa euro: " + e.getMessage());
+        }
     }
 }
