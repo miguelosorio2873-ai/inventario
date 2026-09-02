@@ -16,6 +16,7 @@ public class Dashboard extends JFrame {
     private final Color COLOR_SIDEBAR_HOVER = new Color(31, 41, 55);
     private final Color COLOR_ACTIVO = new Color(16, 185, 129);
     private final Color COLOR_FONDO = new Color(24, 24, 27);
+    private boolean licenciaBloqueada = false;
 
     public Dashboard() {
         instancia = this;
@@ -25,6 +26,9 @@ public class Dashboard extends JFrame {
         setMinimumSize(new Dimension(1100, 700));
         setLocationRelativeTo(null);
         setUndecorated(true);
+
+        // Si la licencia del usuario actual está vencida, todo queda bloqueado hasta renovar.
+        licenciaBloqueada = SesionUsuario.getInstancia().licenciaVencida();
 
         JPanel mainPanel = new JPanel(new BorderLayout());
         mainPanel.setBackground(COLOR_FONDO);
@@ -46,8 +50,12 @@ public class Dashboard extends JFrame {
 
         setContentPane(mainPanel);
 
-        // Mostrar Dashboard por defecto
-        mostrarPanel(new PanelInicio());
+        // Mostrar Dashboard por defecto (o bloqueo por licencia vencida)
+        if (licenciaBloqueada) {
+            mostrarPanel(new PanelLicenciaVencida(this::destrabar));
+        } else {
+            mostrarPanel(new PanelInicio());
+        }
 
         // Drag support
         final Point[] dragPoint = {null};
@@ -354,10 +362,20 @@ public class Dashboard extends JFrame {
     }
 
     public void mostrarPanel(JPanel panel) {
+        // Con la licencia vencida, ningún panel es accesible: se muestra el bloqueo.
+        if (licenciaBloqueada && !(panel instanceof PanelLicenciaVencida)) {
+            panel = new PanelLicenciaVencida(this::destrabar);
+        }
         panelContenido.removeAll();
         panelContenido.add(panel, BorderLayout.CENTER);
         panelContenido.revalidate();
         panelContenido.repaint();
+    }
+
+    /** Se invoca tras renovar la licencia: levanta el bloqueo y vuelve al inicio. */
+    public void destrabar() {
+        licenciaBloqueada = false;
+        mostrarPanel(new PanelInicio());
     }
 
     private void actualizarTasaLabel(JLabel label) {

@@ -70,11 +70,25 @@ public class PanelUsuarios extends JPanel {
         add(header, BorderLayout.NORTH);
 
         // Tabla
-        String[] cols = {"ID", "Nombre", "Email", "Rol", "Estado"};
+        String[] cols = {"ID", "Nombre", "Email", "Rol", "Licencia"};
         modelo = new DefaultTableModel(cols, 0) {
             public boolean isCellEditable(int r, int c) { return false; }
         };
         tabla = PanelProductos.crearTabla(modelo);
+        tabla.getColumnModel().getColumn(4).setCellRenderer(new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable tbl, Object value, boolean isSel, boolean hasFocus, int r, int c) {
+                Component cell = super.getTableCellRendererComponent(tbl, value, isSel, hasFocus, r, c);
+                try {
+                    long id = (long) modelo.getValueAt(r, 0);
+                    if (DAO.UsuarioDAO.esPropietario(id)) {
+                        cell.setForeground(new Color(16, 185, 129));
+                        cell.setFont(getFont().deriveFont(java.awt.Font.BOLD));
+                    }
+                } catch (Exception ex) {}
+                return cell;
+            }
+        });
         JScrollPane scroll = new JScrollPane(tabla);
         scroll.setBorder(BorderFactory.createEmptyBorder());
         scroll.getViewport().setBackground(new Color(39, 39, 42));
@@ -93,12 +107,14 @@ public class PanelUsuarios extends JPanel {
         modelo.setRowCount(0);
         try {
             for (Usuario u : dao.listarTodos()) {
+                boolean propio = DAO.UsuarioDAO.esPropietario(u.getId());
+                String lic = estadoLicenciaUsuario(u, propio);
                 modelo.addRow(new Object[]{
                     u.getId(),
                     u.getNombre(),
                     u.getEmail(),
                     u.getRol() != null ? u.getRol() : "Estándar",
-                    "Activo"
+                    lic
                 });
             }
         } catch (SQLException e) {
@@ -111,8 +127,33 @@ public class PanelUsuarios extends JPanel {
         if (lblPie != null) lblPie.setText("Usuarios: " + modelo.getRowCount());
     }
 
+    private String estadoLicenciaUsuario(Usuario u, boolean propietario) {
+        if (propietario) return "Propietario";
+        if (!u.isLicenciaActiva()) return "Sin licencia";
+        String v = u.getLicenciaVencimiento();
+        if (v == null || v.trim().isEmpty()) return "Activa";
+        try {
+            java.time.LocalDate fecha = java.time.LocalDate.parse(v.trim(), java.time.format.DateTimeFormatter.ISO_LOCAL_DATE);
+            if (java.time.LocalDate.now().isAfter(fecha)) return "Vencida";
+            long dias = java.time.temporal.ChronoUnit.DAYS.between(java.time.LocalDate.now(), fecha);
+            return "Vence: " + fecha.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy")) + " (" + dias + "d)";
+        } catch (Exception e) {
+            return "Activa";
+        }
+    }
+
     private void dialogoUsuario(Usuario usr) {
         boolean ed = usr != null;
+        boolean propietario = false;
+        try { propietario = ed && DAO.UsuarioDAO.esPropietario(usr.getId()); }
+        catch (Exception e) {}
+
+        // Solo el propietario ('miguel') puede gestionar licencias.
+        boolean puedeGestionarLicencia = false;
+        try {
+            Long actual = CX.SesionUsuario.getInstancia().getUsuarioId();
+            puedeGestionarLicencia = actual != null && DAO.UsuarioDAO.esPropietario(actual);
+        } catch (Exception e) {}
 
         JTextField tfNombre = PanelProductos.crearCampo(ed ? usr.getNombre() : "", 100);
         JTextField tfEmail = PanelProductos.crearCampo(ed ? usr.getEmail() : "", 100);
@@ -140,6 +181,10 @@ public class PanelUsuarios extends JPanel {
         cbRol.setFont(UI.CAMPO);
         cbRol.setEditable(true);
         if (ed && usr.getRol() != null) cbRol.setSelectedItem(usr.getRol());
+        if (propietario) {
+            cbRol.setSelectedItem("Admin");
+            cbRol.setEnabled(false);
+        }
 
         // Panel de Permisos Detallado
         String[] modulos = {"Dashboard", "Ventas", "Productos", "Inventario", "Usuarios", "Reportes", "Bitacora", "Configuracion"};
@@ -240,6 +285,12 @@ public class PanelUsuarios extends JPanel {
         pBasico.add(new JLabel("Nombre:") {{ setForeground(Color.WHITE); }}); pBasico.add(tfNombre);
         pBasico.add(new JLabel("Email:") {{ setForeground(Color.WHITE); }}); pBasico.add(tfEmail);
         pBasico.add(new JLabel("Rol:") {{ setForeground(Color.WHITE); }}); pBasico.add(cbRol);
+        if (propietario) {
+            JLabel nota = new JLabel("Propietario intocable: no se puede eliminar ni cambiar su rol Admin.");
+            nota.setForeground(new Color(16, 185, 129));
+            nota.setFont(UI.NOTA);
+            pBasico.add(nota);
+        }
         pMain.add(pBasico);
         pMain.add(Box.createRigidArea(new Dimension(0, 15)));
 
@@ -253,7 +304,55 @@ public class PanelUsuarios extends JPanel {
             pMain.add(Box.createRigidArea(new Dimension(0, 15)));
         }
 
-        // Sección 3: Permisos
+        // Sección 3: Licencia (solo el propietario puede gestionarla)
+        boolean licActiv = ed && usr.isLicenciaActiva();
+        JCheckBox chkLicencia = new JCheckBox("Habilitar licencia (tiempo de uso)");
+        chkLicencia.setSelected(licActiv);
+        chkLicencia.setForeground(new Color(200, 200, 200));
+        chkLicencia.setOpaque(false);
+        chkLicencia.setFont(UI.CAMPO);
+        chkLicencia.setEnabled(puedeGestionarLicencia && !propietario);
+        if (propietario) {
+            chkLicencia.setToolTipText("El propietario no usa licencia.");
+        }
+
+        Utils.DatePickerField tfLicVenc = new Utils.DatePickerField();
+        tfLicVenc.setFechaISO(ed ? usr.getLicenciaVencimiento() : "");
+        tfLicVenc.setEnabled(licActiv && puedeGestionarLicencia && !propietario);
+        JLabel lblVencFormato = new JLabel("Toca el icono del calendario para elegir la fecha");
+        lblVencFormato.setForeground(new Color(150, 150, 150));
+        lblVencFormato.setFont(UI.NOTA);
+
+        final boolean gestionaLicencia = puedeGestionarLicencia && !propietario;
+        chkLicencia.addActionListener(e -> {
+            tfLicVenc.setEnabled(chkLicencia.isSelected() && gestionaLicencia);
+            if (!chkLicencia.isSelected()) tfLicVenc.setFechaISO(null);
+        });
+
+        JPanel pLic = new JPanel();
+        pLic.setLayout(new BoxLayout(pLic, BoxLayout.Y_AXIS));
+        pLic.setOpaque(false);
+        pLic.setBorder(BorderFactory.createTitledBorder(BorderFactory.createLineBorder(new Color(70, 70, 70)),
+            "Licencia / Tiempo de Uso", 0, 0, null, Color.WHITE));
+        pLic.add(chkLicencia);
+        pLic.add(Box.createRigidArea(new Dimension(0, 5)));
+        JPanel rowVenc = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        rowVenc.setOpaque(false);
+        rowVenc.add(new JLabel("Vence el:") {{ setForeground(Color.WHITE); setFont(UI.NOTA); }});
+        rowVenc.add(tfLicVenc);
+        rowVenc.add(lblVencFormato);
+        pLic.add(rowVenc);
+        if (!puedeGestionarLicencia) {
+            JLabel soloMiguel = new JLabel("🔒 Solo el propietario (miguel) puede modificar la licencia.");
+            soloMiguel.setForeground(new Color(239, 68, 68));
+            soloMiguel.setFont(UI.NOTA);
+            pLic.add(soloMiguel);
+        }
+
+        pMain.add(pLic);
+        pMain.add(Box.createRigidArea(new Dimension(0, 15)));
+
+        // Sección 4: Permisos
         pMain.add(new JLabel("Configuración de Acceso") {{ setForeground(new Color(16, 185, 129)); setFont(getFont().deriveFont(Font.BOLD)); }});
         pMain.add(Box.createRigidArea(new Dimension(0, 5)));
         pMain.add(pPermisos);
@@ -299,6 +398,13 @@ public class PanelUsuarios extends JPanel {
                     sb.append(normalizar(modulos[i])).append(":").append(modSb.toString());
                 }
                 u.setPermisos(sb.toString());
+
+                // Licencia (solo se aplica si el propietario gestiona; el propietario no tiene licencia).
+                if (puedeGestionarLicencia && !propietario) {
+                    boolean activa = chkLicencia.isSelected();
+                    u.setLicenciaActiva(activa);
+                    u.setLicenciaVencimiento(activa ? tfLicVenc.getTextoISO() : "");
+                }
 
                 u.setPregunta1(tfP1.getText()); u.setRespuesta1(tfR1.getText());
                 u.setPregunta2(tfP2.getText()); u.setRespuesta2(tfR2.getText());
@@ -436,6 +542,15 @@ public class PanelUsuarios extends JPanel {
     private void eliminarSeleccionado() {
         int row = tabla.getSelectedRow();
         if (row < 0) return;
+        try {
+            long id = (long) modelo.getValueAt(row, 0);
+            if (DAO.UsuarioDAO.esPropietario(id)) {
+                JOptionPane.showMessageDialog(this,
+                    "🚫 El usuario propietario ('miguel') no puede ser eliminado.",
+                    "Acción no permitida", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+        } catch (SQLException e) { /* continuar con la validacion del DAO */ }
         int r = JOptionPane.showConfirmDialog(this, "¿Eliminar usuario?", "Confirmar", JOptionPane.YES_NO_OPTION);
         if (r == JOptionPane.YES_OPTION) {
             try {

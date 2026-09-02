@@ -13,7 +13,7 @@ import java.util.List;
 public class UsuarioDAO {
 
     public Usuario login(String email, String password) throws SQLException {
-        String sql = "SELECT id, nombre, email, password, rol, permisos, intentos_fallidos, bloqueado_hasta FROM usuario WHERE email = ?";
+        String sql = "SELECT id, nombre, email, password, rol, permisos, intentos_fallidos, bloqueado_hasta, licencia_activa, licencia_vencimiento FROM usuario WHERE email = ?";
         try (Connection con = ConexionBD.conectar();
              PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, AESUtil.encriptar(email));
@@ -49,7 +49,8 @@ public class UsuarioDAO {
                         if (requiereMigracion) migrarAArgon2(id, password, con);
                         resetearIntentos(id, con);
                         Usuario logeado = mapearLogin(rs);
-                        SesionUsuario.getInstancia().iniciarSesion(logeado.getId(), logeado.getNombre(), logeado.getRol(), logeado.getPermisos());
+                        SesionUsuario.getInstancia().iniciarSesion(logeado.getId(), logeado.getNombre(), logeado.getRol(),
+                            logeado.getPermisos(), logeado.isLicenciaActiva(), logeado.getLicenciaVencimiento());
                         return logeado;
                     } else {
                         registrarFallo(id, intentos, con);
@@ -115,7 +116,7 @@ public class UsuarioDAO {
     }
 
     public void insertar(Usuario u) throws SQLException {
-        String sql = "INSERT INTO usuario (nombre, email, password, rol, permisos, pregunta_1, respuesta_1, pregunta_2, respuesta_2, pregunta_3, respuesta_3, pregunta_4, respuesta_4) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)";
+        String sql = "INSERT INTO usuario (nombre, email, password, rol, permisos, pregunta_1, respuesta_1, pregunta_2, respuesta_2, pregunta_3, respuesta_3, pregunta_4, respuesta_4, licencia_activa, licencia_vencimiento) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
         try (Connection con = ConexionBD.conectar();
              PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, AESUtil.encriptar(u.getNombre()));
@@ -131,12 +132,19 @@ public class UsuarioDAO {
             ps.setString(11, AESUtil.encriptar(u.getRespuesta3()));
             ps.setString(12, AESUtil.encriptar(u.getPregunta4()));
             ps.setString(13, AESUtil.encriptar(u.getRespuesta4()));
+            ps.setInt(14, u.isLicenciaActiva() ? 1 : 0);
+            ps.setString(15, u.getLicenciaVencimiento());
             ps.executeUpdate();
         }
     }
 
     public void actualizar(Usuario u) throws SQLException {
-        String sql = "UPDATE usuario SET nombre=?, email=?, rol=?, permisos=?, pregunta_1=?, respuesta_1=?, pregunta_2=?, respuesta_2=?, pregunta_3=?, respuesta_3=?, pregunta_4=?, respuesta_4=? WHERE id=?";
+        // El propietario ('miguel') no puede ser degradado: conserva rol Admin.
+        if (esPropietario(u.getId())) {
+            u.setRol("Admin");
+            u.setPermisos(""); // Admin con acceso total (permisos vacios = todos)
+        }
+        String sql = "UPDATE usuario SET nombre=?, email=?, rol=?, permisos=?, pregunta_1=?, respuesta_1=?, pregunta_2=?, respuesta_2=?, pregunta_3=?, respuesta_3=?, pregunta_4=?, respuesta_4=?, licencia_activa=?, licencia_vencimiento=? WHERE id=?";
         try (Connection con = ConexionBD.conectar();
              PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, AESUtil.encriptar(u.getNombre()));
@@ -151,7 +159,9 @@ public class UsuarioDAO {
             ps.setString(10, AESUtil.encriptar(u.getRespuesta3()));
             ps.setString(11, AESUtil.encriptar(u.getPregunta4()));
             ps.setString(12, AESUtil.encriptar(u.getRespuesta4()));
-            ps.setLong(13, u.getId());
+            ps.setInt(13, u.isLicenciaActiva() ? 1 : 0);
+            ps.setString(14, u.getLicenciaVencimiento());
+            ps.setLong(15, u.getId());
             ps.executeUpdate();
         }
     }
@@ -196,6 +206,8 @@ public class UsuarioDAO {
         u.setEmail(AESUtil.desencriptar(rs.getString("email")));
         u.setRol(AESUtil.desencriptar(rs.getString("rol")));
         u.setPermisos(rs.getString("permisos"));
+        u.setLicenciaActiva(rs.getInt("licencia_activa") == 1);
+        u.setLicenciaVencimiento(rs.getString("licencia_vencimiento"));
         return u;
     }
 
@@ -206,6 +218,8 @@ public class UsuarioDAO {
         u.setEmail(AESUtil.desencriptar(rs.getString("email")));
         u.setRol(AESUtil.desencriptar(rs.getString("rol")));
         u.setPermisos(rs.getString("permisos"));
+        u.setLicenciaActiva(rs.getInt("licencia_activa") == 1);
+        u.setLicenciaVencimiento(rs.getString("licencia_vencimiento"));
         u.setPregunta1(AESUtil.desencriptar(rs.getString("pregunta_1")));
         u.setRespuesta1(AESUtil.desencriptar(rs.getString("respuesta_1")));
         u.setPregunta2(AESUtil.desencriptar(rs.getString("pregunta_2")));
@@ -217,11 +231,75 @@ public class UsuarioDAO {
         return u;
     }
 
+    /**
+     * Identifica si un usuario es el propietario intocable ('miguel').
+     * Se compara por el email desencriptado.
+     */
+    public static boolean esPropietario(long id) throws SQLException {
+        return esEmailPropietario(emailPorId(id));
+    }
+
+    public static boolean esEmailPropietario(String correo) {
+        String email = correo == null ? "" : correo.trim();
+        return email.equalsIgnoreCase("miguelosorio2873@gmail.com");
+    }
+
+    private static String emailPorId(long id) throws SQLException {
+        String sql = "SELECT email FROM usuario WHERE id = ?";
+        try (Connection con = ConexionBD.conectar();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setLong(1, id);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return AESUtil.desencriptar(rs.getString("email"));
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Verifica la contraseña (Argon2) de un usuario por su correo (desencriptado).
+     * Usado para autorizar la renovación de la licencia por el propietario.
+     */
+    public boolean verificarClavePropietario(String correo, String password) throws SQLException {
+        String sql = "SELECT email, password FROM usuario";
+        try (Connection con = ConexionBD.conectar();
+             PreparedStatement ps = con.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                String em = AESUtil.desencriptar(rs.getString("email"));
+                if (em.equalsIgnoreCase(correo == null ? "" : correo.trim())) {
+                    String hash = rs.getString("password");
+                    if (hash != null && hash.startsWith("$argon2")) {
+                        return SeguridadArgon2.verificar(hash, password);
+                    }
+                    return hash != null && hash.equals(encriptarSHA256(password));
+                }
+            }
+        }
+        return false;
+    }
+
     public void eliminar(long id) throws SQLException {
+        // El propietario ('miguel') no puede ser eliminado por nadie.
+        if (esPropietario(id)) {
+            throw new SQLException("🚫 El usuario propietario ('miguel') no puede ser eliminado.");
+        }
         String sql = "DELETE FROM usuario WHERE id=?";
         try (Connection con = ConexionBD.conectar();
              PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setLong(1, id);
+            ps.executeUpdate();
+        }
+    }
+
+    /** Actualiza la configuración de licencia de un usuario (activa + fecha de vencimiento). */
+    public void actualizarLicencia(long id, boolean activa, String vencimiento) throws SQLException {
+        String sql = "UPDATE usuario SET licencia_activa = ?, licencia_vencimiento = ? WHERE id = ?";
+        try (Connection con = ConexionBD.conectar();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setInt(1, activa ? 1 : 0);
+            ps.setString(2, vencimiento);
+            ps.setLong(3, id);
             ps.executeUpdate();
         }
     }

@@ -7,6 +7,8 @@ public class SesionUsuario {
     private String nombreUsuario;
     private String rol;
     private String permisos;
+    private boolean licenciaActiva;
+    private String licenciaVencimiento;
 
     private SesionUsuario() {}
 
@@ -24,11 +26,23 @@ public class SesionUsuario {
         this.permisos = permisos;
     }
 
+    public void iniciarSesion(long id, String nombre, String rol, String permisos,
+                              boolean licenciaActiva, String licenciaVencimiento) {
+        this.usuarioId = id;
+        this.nombreUsuario = nombre;
+        this.rol = rol;
+        this.permisos = permisos;
+        this.licenciaActiva = licenciaActiva;
+        this.licenciaVencimiento = licenciaVencimiento;
+    }
+
     public void cerrarSesion() {
         this.usuarioId = null;
         this.nombreUsuario = null;
         this.rol = null;
         this.permisos = null;
+        this.licenciaActiva = false;
+        this.licenciaVencimiento = null;
     }
 
     public Long getUsuarioId() {
@@ -49,6 +63,34 @@ public class SesionUsuario {
 
     public void setPermisos(String permisos) {
         this.permisos = permisos;
+    }
+
+    public boolean isLicenciaActiva() {
+        return licenciaActiva;
+    }
+
+    public void setLicenciaActiva(boolean licenciaActiva) {
+        this.licenciaActiva = licenciaActiva;
+    }
+
+    public String getLicenciaVencimiento() {
+        return licenciaVencimiento;
+    }
+
+    public void setLicenciaVencimiento(String licenciaVencimiento) {
+        this.licenciaVencimiento = licenciaVencimiento;
+    }
+
+    /** ¿El usuario actual tiene su licencia vencida (activa y con fecha pasada)? */
+    public boolean licenciaVencida() {
+        if (!licenciaActiva) return false;
+        if (licenciaVencimiento == null || licenciaVencimiento.trim().isEmpty()) return false;
+        try {
+            java.time.LocalDate v = java.time.LocalDate.parse(licenciaVencimiento.trim(), java.time.format.DateTimeFormatter.ISO_LOCAL_DATE);
+            return java.time.LocalDate.now().isAfter(v);
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     private String normalizar(String s) {

@@ -126,6 +126,42 @@ public class Config {
         setProp("auto.ruta", ruta);
     }
 
+    // ---- Licencia ----
+
+    /** Correo del propietario (usuario 'miguel') que puede renovar la licencia. */
+    public static String getLicenciaCorreo() {
+        String c = getProp("licencia.correo", "miguelosorio2873@gmail.com");
+        return (c == null || c.trim().isEmpty()) ? "miguelosorio2873@gmail.com" : c.trim();
+    }
+
+    public static void setLicenciaCorreo(String correo) {
+        setProp("licencia.correo", correo == null ? "" : correo.trim());
+    }
+
+    /** Fecha de vencimiento de la licencia en formato ISO (yyyy-MM-dd); vacio = sin vencimiento. */
+    public static String getLicenciaVencimiento() {
+        return getProp("licencia.vencimiento", "");
+    }
+
+    public static void setLicenciaVencimiento(String fechaIso) {
+        setProp("licencia.vencimiento", fechaIso == null ? "" : fechaIso.trim());
+    }
+
+    /** ¿La licencia tiene un vencimiento configurado? */
+    public static boolean hayLicencia() {
+        return !getLicenciaVencimiento().isEmpty();
+    }
+
+    /** Nombre visible del propietario / empresa para el mensaje de renovación. */
+    public static String getLicenciaTitular() {
+        String t = getProp("licencia.titular", "Miguel Osorio");
+        return (t == null || t.trim().isEmpty()) ? "Miguel Osorio" : t.trim();
+    }
+
+    public static void setLicenciaTitular(String titular) {
+        setProp("licencia.titular", titular == null ? "" : titular.trim());
+    }
+
     private static String getProp(String clave, String def) {
         Properties props = new Properties();
         try (FileInputStream in = new FileInputStream(resolvePath().toFile())) {

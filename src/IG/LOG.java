@@ -265,7 +265,8 @@ public class LOG extends JFrame {
             UsuarioDAO dao = new UsuarioDAO();
             Usuario user = dao.login(email, pass);
             if (user != null) {
-                SesionUsuario.getInstancia().iniciarSesion(user.getId(), user.getNombre(), user.getRol(), user.getPermisos());
+                SesionUsuario.getInstancia().iniciarSesion(user.getId(), user.getNombre(), user.getRol(),
+                    user.getPermisos(), user.isLicenciaActiva(), user.getLicenciaVencimiento());
                 new DAO.BitacoraDAO().registrar("Login", "Iniciar Sesión",
                     "Inicio de sesión: " + user.getNombre() + " [" + user.getEmail() + "] rol: " + user.getRol());
                 Dashboard dash = new Dashboard();

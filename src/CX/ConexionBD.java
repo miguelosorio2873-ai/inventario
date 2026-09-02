@@ -266,6 +266,17 @@ public class ConexionBD {
             stmt.executeUpdate("CREATE TABLE IF NOT EXISTS inventario (id INTEGER PRIMARY KEY AUTOINCREMENT, producto_id INTEGER NOT NULL, proveedor_id INTEGER, precio REAL NOT NULL DEFAULT 0, precio_balance REAL NOT NULL DEFAULT 0, cantidad REAL NOT NULL DEFAULT 0, tipo_movimiento TEXT, fecha_movimiento DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, motivo TEXT, FOREIGN KEY (producto_id) REFERENCES producto(id) ON DELETE CASCADE, FOREIGN KEY (proveedor_id) REFERENCES proveedor(id) ON DELETE SET NULL)");
             stmt.executeUpdate("CREATE TABLE IF NOT EXISTS factura (id INTEGER PRIMARY KEY AUTOINCREMENT, movimiento_id INTEGER, cliente_id INTEGER, numero_factura TEXT UNIQUE, fecha_emision DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, metodo_pago TEXT, estado TEXT, subtotal REAL NOT NULL DEFAULT 0, impuestos REAL NOT NULL DEFAULT 0, total REAL NOT NULL DEFAULT 0, FOREIGN KEY (movimiento_id) REFERENCES inventario(id) ON DELETE SET NULL, FOREIGN KEY (cliente_id) REFERENCES cliente(id) ON DELETE SET NULL)");
             stmt.executeUpdate("CREATE TABLE IF NOT EXISTS usuario (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT NOT NULL, email TEXT NOT NULL UNIQUE, password TEXT, rol TEXT, pregunta_1 TEXT, pregunta_2 TEXT, pregunta_3 TEXT, pregunta_4 TEXT, respuesta_1 TEXT, respuesta_2 TEXT, respuesta_3 TEXT, respuesta_4 TEXT, intentos_fallidos INTEGER DEFAULT 0, bloqueado_hasta DATETIME, ultimo_login DATETIME, permisos TEXT)");
+            // Migración: licencia por usuario (activa + fecha de vencimiento).
+            String[][] colsUsuario = {{"licencia_activa", "INTEGER DEFAULT 0"}, {"licencia_vencimiento", "TEXT"}};
+            for (String[] cc : colsUsuario) {
+                boolean existe = false;
+                try (ResultSet pr = stmt.executeQuery("PRAGMA table_info(usuario)")) {
+                    while (pr.next()) { if (cc[0].equalsIgnoreCase(pr.getString("name"))) { existe = true; break; } }
+                } catch (SQLException e) {}
+                if (!existe) {
+                    try { stmt.executeUpdate("ALTER TABLE usuario ADD COLUMN " + cc[0] + " " + cc[1]); } catch (SQLException e) {}
+                }
+            }
             stmt.executeUpdate("CREATE TABLE IF NOT EXISTS detalle_factura (id INTEGER PRIMARY KEY AUTOINCREMENT, factura_id INTEGER NOT NULL, producto_id INTEGER NOT NULL, cantidad REAL NOT NULL DEFAULT 0, precio_unitario REAL NOT NULL DEFAULT 0, subtotal REAL NOT NULL DEFAULT 0, FOREIGN KEY (factura_id) REFERENCES factura(id) ON DELETE CASCADE, FOREIGN KEY (producto_id) REFERENCES producto(id) ON DELETE RESTRICT)");
 
             // Migración: congelar el equivalente en Bs de cada factura/detalle con su tasa del momento.

@@ -15,6 +15,8 @@ public class Usuario {
     private String respuesta3;
     private String respuesta4;
     private String permisos;
+    private boolean licenciaActiva;
+    private String licenciaVencimiento;
 
     public Usuario() {}
 
@@ -67,4 +69,10 @@ public class Usuario {
 
     public String getRespuesta4() { return respuesta4; }
     public void setRespuesta4(String respuesta4) { this.respuesta4 = respuesta4; }
+
+    public boolean isLicenciaActiva() { return licenciaActiva; }
+    public void setLicenciaActiva(boolean licenciaActiva) { this.licenciaActiva = licenciaActiva; }
+
+    public String getLicenciaVencimiento() { return licenciaVencimiento; }
+    public void setLicenciaVencimiento(String licenciaVencimiento) { this.licenciaVencimiento = licenciaVencimiento; }
 }
