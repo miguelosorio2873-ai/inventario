@@ -33,6 +33,17 @@ public class DetalleFacturaDAO {
         df.setCantidad(rs.getDouble("cantidad"));
         df.setPrecioUnitario(rs.getDouble("precio_unitario"));
         df.setSubtotal(rs.getDouble("subtotal"));
+        df.setTasaVes(rs.getDouble("tasa_ves"));
+        double pub = rs.getDouble("precio_unitario_bs");
+        double subb = rs.getDouble("subtotal_bs");
+        // Respaldo si la linea no fue congelada (subtotal_bs=0): recalc con tasa vigente.
+        if (subb <= 0) {
+            double t = df.getTasaVes() > 0 ? df.getTasaVes() : Utils.Config.getTasaVES();
+            pub = Math.round(df.getPrecioUnitario() * t * 100) / 100.0;
+            subb = Math.round(df.getSubtotal() * t * 100) / 100.0;
+        }
+        df.setPrecioUnitarioBs(pub);
+        df.setSubtotalBs(subb);
         try { df.setProductoNombre(AESUtil.desencriptar(rs.getString("producto_nombre"))); } catch (Exception e) {}
         try { df.setProductoSku(AESUtil.desencriptar(rs.getString("producto_sku"))); } catch (Exception e) {}
         return df;

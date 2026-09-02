@@ -363,6 +363,17 @@ public class LOG extends JFrame {
         CX.ConexionBD.inicializarBaseDatos();
         CX.ConexionBD.programarRespaldoAutomatico();
         actualizarTasaSincrona();
+        // Construye el histórico de tasas de los días anteriores en segundo plano.
+        new Thread(() -> {
+            try {
+                DAO.TasaCambioDAO tcd = new DAO.TasaCambioDAO();
+                tcd.construirHistoricoPendiente();
+                // Re-fija el Bs congelado de facturas viejas con la tasa real de su día.
+                tcd.reconciliarFacturasConHistorico();
+            } catch (Exception e) {
+                System.out.println("No se pudo construir histórico de tasas: " + e.getMessage());
+            }
+        }, "historico-tasas").start();
         SwingUtilities.invokeLater(() -> {
             LOG login = new LOG();
             login.setVisible(true);
@@ -423,6 +434,12 @@ public class LOG extends JFrame {
         double tasa = Double.parseDouble(body.substring(colon + 1, end).trim());
         Utils.Config.setTasaVES(tasa);
         Utils.Config.setHoraUltimaActualizacion(java.time.LocalTime.now());
+        // Registra la tasa de hoy en el historico por dia (tabla tasa_cambio).
+        try {
+            new DAO.TasaCambioDAO().guardarHoy(tasa);
+        } catch (Exception e) {
+            System.out.println("No se pudo registrar la tasa del dia en el historico: " + e.getMessage());
+        }
         System.out.println("Tasa BCV actualizada: Bs " + tasa);
         actualizarEuro();
      }

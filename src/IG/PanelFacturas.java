@@ -123,7 +123,7 @@ public class PanelFacturas extends JPanel {
                     f.getMetodoPago() != null ? f.getMetodoPago() : "",
                     String.format(Locale.US, "$%.2f", f.getSubtotal()),
                     String.format(Locale.US, "$%.2f", f.getTotal()),
-                    Utils.Formato.bs(f.getTotal()),
+                    Utils.Formato.bsFixed(f.getTotalBs()),
                     f.getEstado(),
                     productosDeFactura(f.getId())
                 });
@@ -153,12 +153,14 @@ public class PanelFacturas extends JPanel {
         String t = campoBuscar.getText().trim();
         modelo.setRowCount(0);
         double sumaUsd = 0;
+        double sumaBs = 0;
         try {
             List<Factura> lista = t.isEmpty() ? dao.listarTodasConCliente() : dao.buscarEnMemoria(t);
             int pagadas = 0;
             for (Factura f : lista) {
                 if (!"Anulada".equals(f.getEstado())) {
                     sumaUsd += f.getTotal();
+                    sumaBs += f.getTotalBs();
                     pagadas++;
                 }
                 modelo.addRow(new Object[]{
@@ -167,12 +169,12 @@ public class PanelFacturas extends JPanel {
                     f.getMetodoPago() != null ? f.getMetodoPago() : "",
                     String.format(Locale.US, "$%.2f", f.getSubtotal()),
                     String.format(Locale.US, "$%.2f", f.getTotal()),
-                    Utils.Formato.bs(f.getTotal()),
+                    Utils.Formato.bsFixed(f.getTotalBs()),
                     f.getEstado(),
                     productosDeFactura(f.getId())
                 });
             }
-            if (lblPie != null) lblPie.setText(String.format("Ventas: %d | Total (sin anuladas): %s (%s)", pagadas, Utils.Formato.usd(sumaUsd), Utils.Formato.bsMiles(sumaUsd)));
+            if (lblPie != null) lblPie.setText(String.format("Ventas: %d | Total (sin anuladas): %s (%s)", pagadas, Utils.Formato.usd(sumaUsd), Utils.Formato.bsMilesFixed(sumaBs)));
         } catch (SQLException e) {
             JOptionPane.showMessageDialog(this, "Error: " + e.getMessage());
         }
@@ -711,7 +713,7 @@ public class PanelFacturas extends JPanel {
                     esFiado
                         ? "Venta registrada al fiado!\nFactura: %s\nTotal: %s (%s)\nCliente: %s\nStock actualizado automaticamente."
                         : "Venta registrada!\nFactura: %s\nTotal: %s (%s)\nStock actualizado automaticamente.",
-                    f.getNumeroFactura(), Utils.Formato.usd(total), Utils.Formato.bsMiles(total),
+                    f.getNumeroFactura(), Utils.Formato.usd(total), Utils.Formato.bsMilesFixed(f.getTotalBs()),
                     cliente != null ? cliente.getNombre() : ""));
             } catch (SQLException ex) {
                 CX.ConexionBD.errorManager(ex);
@@ -815,13 +817,17 @@ public class PanelFacturas extends JPanel {
                 sb.append(String.format("%-20s %8.0f %10.2f %14.2f %14.2f\n",
                     df.getProductoNombre() != null ? df.getProductoNombre() : "ID:" + df.getProductoId(),
                     df.getCantidad(), df.getPrecioUnitario(), df.getSubtotal(),
-                    df.getSubtotal() * Utils.Config.getTasaVES()));
+                    df.getSubtotalBs()));
             }
             sb.append("-".repeat(66)).append("\n");
             double subDet = PanelProductos.parseSafeDouble(modelo.getValueAt(row, 4).toString().replace("$", ""));
             double totDet = PanelProductos.parseSafeDouble(modelo.getValueAt(row, 5).toString().replace("$", ""));
-            sb.append(String.format("Subtotal: $%.2f  (%s)\n", subDet, Utils.Formato.bsMiles(subDet)));
-            sb.append(String.format("TOTAL: $%.2f  (%s)\n", totDet, Utils.Formato.bsMiles(totDet)));
+            double totDetBs = PanelProductos.parseSafeDouble(modelo.getValueAt(row, 6).toString().replace("Bs", "").trim());
+            double subDetBs = 0;
+            for (DetalleFactura d : detalles) subDetBs += d.getSubtotalBs();
+            sb.append(String.format("Tasa: Bs %.2f / $1\n", detalles.get(0).getTasaVes()));
+            sb.append(String.format("Subtotal: $%.2f  (%s)\n", subDet, Utils.Formato.bsMilesFixed(subDetBs)));
+            sb.append(String.format("TOTAL: $%.2f  (%s)\n", totDet, Utils.Formato.bsMilesFixed(totDetBs)));
 
             JTextArea ta = new JTextArea(sb.toString());
             ta.setFont(new Font("Monospaced", Font.PLAIN, 13));

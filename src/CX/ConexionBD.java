@@ -7,6 +7,9 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import javax.swing.JOptionPane;
 
 public class ConexionBD {
@@ -43,7 +46,25 @@ public class ConexionBD {
             if (esRaizProyecto(asc)) return asc;
             asc = asc.getParentFile();
         }
+
+        // Modo instalado (no hay estructura de proyecto): usar el directorio del
+        // codigo/jar (dona se encuentra el ejecutable y la base de datos).
+        java.io.File claseDir = directorioDelCodigo();
+        if (claseDir != null) return claseDir;
         return actual;
+    }
+
+    /** Directorio donde se encuentra el .class de esta clase (el app desplegada). */
+    private static java.io.File directorioDelCodigo() {
+        try {
+            java.net.URI uri = ConexionBD.class.getProtectionDomain().getCodeSource().getLocation().toURI();
+            java.io.File f = new java.io.File(uri);
+            if (f.isDirectory()) return f.getAbsoluteFile();
+            if (f.isFile()) return f.getParentFile();
+        } catch (Exception e) {
+            // ignorar
+        }
+        return null;
     }
 
     /** Devuelve la ruta absoluta del archivo de base de datos (inventario.db). */
@@ -246,7 +267,56 @@ public class ConexionBD {
             stmt.executeUpdate("CREATE TABLE IF NOT EXISTS factura (id INTEGER PRIMARY KEY AUTOINCREMENT, movimiento_id INTEGER, cliente_id INTEGER, numero_factura TEXT UNIQUE, fecha_emision DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, metodo_pago TEXT, estado TEXT, subtotal REAL NOT NULL DEFAULT 0, impuestos REAL NOT NULL DEFAULT 0, total REAL NOT NULL DEFAULT 0, FOREIGN KEY (movimiento_id) REFERENCES inventario(id) ON DELETE SET NULL, FOREIGN KEY (cliente_id) REFERENCES cliente(id) ON DELETE SET NULL)");
             stmt.executeUpdate("CREATE TABLE IF NOT EXISTS usuario (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT NOT NULL, email TEXT NOT NULL UNIQUE, password TEXT, rol TEXT, pregunta_1 TEXT, pregunta_2 TEXT, pregunta_3 TEXT, pregunta_4 TEXT, respuesta_1 TEXT, respuesta_2 TEXT, respuesta_3 TEXT, respuesta_4 TEXT, intentos_fallidos INTEGER DEFAULT 0, bloqueado_hasta DATETIME, ultimo_login DATETIME, permisos TEXT)");
             stmt.executeUpdate("CREATE TABLE IF NOT EXISTS detalle_factura (id INTEGER PRIMARY KEY AUTOINCREMENT, factura_id INTEGER NOT NULL, producto_id INTEGER NOT NULL, cantidad REAL NOT NULL DEFAULT 0, precio_unitario REAL NOT NULL DEFAULT 0, subtotal REAL NOT NULL DEFAULT 0, FOREIGN KEY (factura_id) REFERENCES factura(id) ON DELETE CASCADE, FOREIGN KEY (producto_id) REFERENCES producto(id) ON DELETE RESTRICT)");
+
+            // Migración: congelar el equivalente en Bs de cada factura/detalle con su tasa del momento.
+            // Agrega columnas si no existen (BD creadas previamente solo guardaban USD).
+            String[][] colsFactura = {{"tasa_ves", "REAL DEFAULT 0"}, {"subtotal_bs", "REAL DEFAULT 0"}, {"total_bs", "REAL DEFAULT 0"}};
+            for (String[] cc : colsFactura) {
+                boolean existe = false;
+                try (ResultSet pr = stmt.executeQuery("PRAGMA table_info(factura)")) {
+                    while (pr.next()) { if (cc[0].equalsIgnoreCase(pr.getString("name"))) { existe = true; break; } }
+                } catch (SQLException e) {}
+                if (!existe) {
+                    try { stmt.executeUpdate("ALTER TABLE factura ADD COLUMN " + cc[0] + " " + cc[1]); } catch (SQLException e) {}
+                }
+            }
+            String[][] colsDetalle = {{"tasa_ves", "REAL DEFAULT 0"}, {"precio_unitario_bs", "REAL DEFAULT 0"}, {"subtotal_bs", "REAL DEFAULT 0"}};
+            for (String[] cc : colsDetalle) {
+                boolean existe = false;
+                try (ResultSet pr = stmt.executeQuery("PRAGMA table_info(detalle_factura)")) {
+                    while (pr.next()) { if (cc[0].equalsIgnoreCase(pr.getString("name"))) { existe = true; break; } }
+                } catch (SQLException e) {}
+                if (!existe) {
+                    try { stmt.executeUpdate("ALTER TABLE detalle_factura ADD COLUMN " + cc[0] + " " + cc[1]); } catch (SQLException e) {}
+                }
+            }
+            // Histórico de tasas por día (se puebla desde hoy en adelante).
+            stmt.executeUpdate("CREATE TABLE IF NOT EXISTS tasa_cambio (fecha TEXT PRIMARY KEY, tasa_ves REAL NOT NULL, actualizado DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP)");
+
+            // Backfill: facturas antiguas sin total_bs (solo guardaban USD) se congelan.
+            // Usa la tasa del historial de su fecha_emision si existe; si no, la vigente.
+            try {
+                double tasaActual = Utils.Config.getTasaVES();
+                int updFact = 0, updDet = 0;
+                try (ResultSet rsF = stmt.executeQuery("SELECT id, fecha_emision, subtotal, total FROM factura WHERE total_bs = 0 OR total_bs IS NULL")) {
+                    while (rsF.next()) {
+                        long idF = rsF.getLong("id");
+                        double sub = rsF.getDouble("subtotal");
+                        double tot = rsF.getDouble("total");
+                        double tasa = tasaPorFecha(stmt, rsF.getTimestamp("fecha_emision"), tasaActual);
+                        stmt.executeUpdate("UPDATE factura SET tasa_ves = " + tasa +
+                            ", subtotal_bs = " + Math.round(sub * tasa * 100) / 100.0 +
+                            ", total_bs = " + Math.round(tot * tasa * 100) / 100.0 + " WHERE id = " + idF);
+                        updFact++;
+                        stmt.executeUpdate("UPDATE detalle_factura SET tasa_ves = " + tasa +
+                            ", precio_unitario_bs = ROUND(precio_unitario * " + tasa + ", 2), subtotal_bs = ROUND(subtotal * " + tasa + ", 2) WHERE factura_id = " + idF + " AND (subtotal_bs = 0 OR subtotal_bs IS NULL)");
+                        updDet++;
+                    }
+                }
+                if (updFact + updDet > 0) System.out.println("Facturas congeladas en Bs: " + updFact + " factura(s), " + updDet + " detalle(s).");
+            } catch (SQLException e) { System.err.println("Error congelando Bs: " + e.getMessage()); }
             stmt.executeUpdate("CREATE TABLE IF NOT EXISTS bitacora (id INTEGER PRIMARY KEY AUTOINCREMENT, usuario_id INTEGER, usuario_nombre TEXT, modulo TEXT, accion TEXT, detalle TEXT, fecha DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (usuario_id) REFERENCES usuario(id) ON DELETE SET NULL)");
+            stmt.executeUpdate("CREATE TABLE IF NOT EXISTS tasa_cambio (fecha TEXT PRIMARY KEY, tasa_ves REAL NOT NULL, actualizado DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP)");
 
             ResultSet rsUsr = stmt.executeQuery("SELECT COUNT(*) FROM usuario");
             rsUsr.next();
@@ -267,6 +337,23 @@ public class ConexionBD {
         } catch (SQLException e) {
             System.err.println("Error inicializando BD: " + e.getMessage());
         }
+    }
+
+    /** Tasa del historial (tasa_cambio) para una fecha; si no existe, FALLBACK. */
+    private static double tasaPorFecha(Statement stmt, Timestamp fecha, double fallback) {
+        if (fecha == null) return fallback;
+        try {
+            String f = new SimpleDateFormat("yyyy-MM-dd").format(new Date(fecha.getTime()));
+            try (ResultSet rs = stmt.executeQuery("SELECT tasa_ves FROM tasa_cambio WHERE fecha = '" + f + "'")) {
+                if (rs.next()) return rs.getDouble("tasa_ves");
+            }
+            try (ResultSet rs = stmt.executeQuery("SELECT tasa_ves FROM tasa_cambio WHERE fecha < '" + f + "' ORDER BY fecha DESC LIMIT 1")) {
+                if (rs.next()) return rs.getDouble("tasa_ves");
+            }
+        } catch (SQLException e) {
+            // ignorar y usar fallback
+        }
+        return fallback;
     }
 
     public static void errorManager(SQLException e) {

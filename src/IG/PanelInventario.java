@@ -108,8 +108,8 @@ public class PanelInventario extends JPanel {
                     m.getProveedorNombre() != null ? m.getProveedorNombre() : "—",
                     tipoLabel,
                     String.format("%.0f", m.getCantidad()),
-                    Utils.Formato.usdBs(m.getPrecio()),
-                    Utils.Formato.usdBs(m.getPrecioBalance()),
+                    Utils.Formato.usdBsConFecha(m.getPrecio(), m.getFechaMovimiento()),
+                    Utils.Formato.usdBsConFecha(m.getPrecioBalance(), m.getFechaMovimiento()),
                     m.getFechaMovimiento() != null ? sdf.format(m.getFechaMovimiento()) : "",
                     m.getMotivo() != null ? m.getMotivo() : ""
                 });
@@ -136,8 +136,8 @@ public class PanelInventario extends JPanel {
                     m.getProveedorNombre() != null ? m.getProveedorNombre() : "—",
                     tipoLabel,
                     String.format("%.0f", m.getCantidad()),
-                    Utils.Formato.usdBs(m.getPrecio()),
-                    Utils.Formato.usdBs(m.getPrecioBalance()),
+                    Utils.Formato.usdBsConFecha(m.getPrecio(), m.getFechaMovimiento()),
+                    Utils.Formato.usdBsConFecha(m.getPrecioBalance(), m.getFechaMovimiento()),
                     m.getFechaMovimiento() != null ? sdf.format(m.getFechaMovimiento()) : "",
                     m.getMotivo() != null ? m.getMotivo() : ""
                 });

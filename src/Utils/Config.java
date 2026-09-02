@@ -18,15 +18,22 @@ public class Config {
     }
 
     private static Path resolvePath() {
+        // Modo desarrollo: src/application.properties junto al proyecto
         Path p = PROJECT_DIR.resolve(FILE_PATH);
         if (Files.exists(p)) return p;
-        // fallback: try from class location
+        // fallback desde la ubicacion de las clases (../../src)
         try {
             Path classDir = Paths.get(Config.class.getProtectionDomain().getCodeSource().getLocation().toURI());
             p = classDir.resolve("../../" + FILE_PATH).normalize();
             if (Files.exists(p)) return p;
+            // Modo instalado: application.properties junto al .class/jar
+            p = classDir.resolve("application.properties").normalize();
+            if (Files.exists(p)) return p;
         } catch (Exception e) {}
-        return Paths.get(FILE_PATH);
+        // Modo instalado: application.properties en el directorio de trabajo
+        Path instalado = PROJECT_DIR.resolve("application.properties");
+        if (Files.exists(instalado)) return instalado;
+        return Paths.get("application.properties");
     }
 
     public static double getTasaVES() {

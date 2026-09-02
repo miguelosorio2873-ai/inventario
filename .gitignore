@@ -13,3 +13,9 @@ config/db.properties
 
 # Copias de seguridad y bases de datos duplicadas
 *_backup_previo.db
+
+# Artefactos de empaquetado / instalador (se generan con empaquetar.ps1)
+/dist/
+/app-input/
+/jpackage-out/
+/instalar/setup-*.exe

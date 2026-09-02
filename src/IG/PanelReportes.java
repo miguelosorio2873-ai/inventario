@@ -530,8 +530,8 @@ public class PanelReportes extends JPanel {
             v.put("ID", m.getId());
             v.put("Producto", m.getProductoNombre() != null ? m.getProductoNombre() : "");
             v.put("Proveedor", m.getProveedorNombre() != null ? m.getProveedorNombre() : "");
-            v.put("Precio", Formato.usdBs(m.getPrecio()));
-            v.put("Precio Balance", Formato.usdBs(m.getPrecioBalance()));
+            v.put("Precio", Formato.usdBsConFecha(m.getPrecio(), m.getFechaMovimiento()));
+            v.put("Precio Balance", Formato.usdBsConFecha(m.getPrecioBalance(), m.getFechaMovimiento()));
             v.put("Cantidad", String.format("%.0f", m.getCantidad()));
             v.put("Tipo Movimiento", m.getTipoMovimiento() != null ? m.getTipoMovimiento() : "");
             v.put("Fecha", m.getFechaMovimiento() != null ? SDF.format(m.getFechaMovimiento()) : "");
@@ -556,8 +556,8 @@ public class PanelReportes extends JPanel {
             v.put("Cliente", (cliente != null && !cliente.isEmpty()) ? cliente : "Venta casual");
             v.put("Fecha", f.getFechaEmision() != null ? SDF.format(f.getFechaEmision()) : "");
             v.put("Metodo Pago", f.getMetodoPago() != null ? f.getMetodoPago() : "");
-            v.put("Subtotal", Formato.usdBs(f.getSubtotal()));
-            v.put("Total", Formato.usdBs(f.getTotal()));
+            v.put("Subtotal", Formato.usdBsFixed(f.getSubtotal(), f.getSubtotalBs()));
+            v.put("Total", Formato.usdBsFixed(f.getTotal(), f.getTotalBs()));
             v.put("Estado", estadoDisplay(f.getEstado()));
             v.put("Productos", productosDeFactura(f.getId()));
             datosCompletos.add(extraerFila(v, columnasActuales));

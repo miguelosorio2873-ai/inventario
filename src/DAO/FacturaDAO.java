@@ -90,10 +90,14 @@ public class FacturaDAO {
      * 4. Actualiza el stock de cada producto
      */
     public long registrarVenta(Factura f) throws SQLException {
-        String sqlFactura = "INSERT INTO factura (cliente_id, numero_factura, metodo_pago, estado, subtotal, impuestos, total) " +
-                            "VALUES (?, ?, ?, ?, ?, ?, ?)";
-        String sqlDetalle = "INSERT INTO detalle_factura (factura_id, producto_id, cantidad, precio_unitario, subtotal) " +
-                            "VALUES (?, ?, ?, ?, ?)";
+        // Congela la tasa y el equivalente en Bs al momento de la venta.
+        double tasa = Utils.Config.getTasaVES();
+        if (tasa <= 0) tasa = 45.0; // respaldo conservador si no hay tasa configurada
+
+        String sqlFactura = "INSERT INTO factura (cliente_id, numero_factura, metodo_pago, estado, subtotal, impuestos, total, tasa_ves, subtotal_bs, total_bs) " +
+                            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        String sqlDetalle = "INSERT INTO detalle_factura (factura_id, producto_id, cantidad, precio_unitario, subtotal, tasa_ves, precio_unitario_bs, subtotal_bs) " +
+                            "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
         String sqlInventario = "INSERT INTO inventario (producto_id, precio, precio_balance, cantidad, tipo_movimiento, motivo) " +
                                "VALUES (?, ?, ?, ?, ?, ?)";
         String sqlStock = "UPDATE producto SET stock_actual = stock_actual - ? WHERE id = ?";
@@ -112,6 +116,9 @@ public class FacturaDAO {
                     ps.setDouble(5, f.getSubtotal());
                     ps.setDouble(6, f.getImpuestos());
                     ps.setDouble(7, f.getTotal());
+                    ps.setDouble(8, tasa);
+                    ps.setDouble(9, Math.round(f.getSubtotal() * tasa * 100) / 100.0);
+                    ps.setDouble(10, Math.round(f.getTotal() * tasa * 100) / 100.0);
                     ps.executeUpdate();
                     try (ResultSet keys = ps.getGeneratedKeys()) {
                         if (keys.next()) facturaId = keys.getLong(1);
@@ -131,6 +138,9 @@ public class FacturaDAO {
                         psDet.setDouble(3, df.getCantidad());
                         psDet.setDouble(4, df.getPrecioUnitario());
                         psDet.setDouble(5, df.getSubtotal());
+                        psDet.setDouble(6, tasa);
+                        psDet.setDouble(7, Math.round(df.getPrecioUnitario() * tasa * 100) / 100.0);
+                        psDet.setDouble(8, Math.round(df.getSubtotal() * tasa * 100) / 100.0);
                         psDet.executeUpdate();
 
                         // Inventario (salida)
@@ -248,6 +258,17 @@ public class FacturaDAO {
         f.setSubtotal(rs.getDouble("subtotal"));
         f.setImpuestos(rs.getDouble("impuestos"));
         f.setTotal(rs.getDouble("total"));
+        f.setTasaVes(rs.getDouble("tasa_ves"));
+        double sb = rs.getDouble("subtotal_bs");
+        double tb = rs.getDouble("total_bs");
+        // Respaldo por si el registro no fue congelado (total_bs=0): recalc con tasa vigente.
+        if (tb <= 0) {
+            double t = f.getTasaVes() > 0 ? f.getTasaVes() : Utils.Config.getTasaVES();
+            sb = Math.round(f.getSubtotal() * t * 100) / 100.0;
+            tb = Math.round(f.getTotal() * t * 100) / 100.0;
+        }
+        f.setSubtotalBs(sb);
+        f.setTotalBs(tb);
         try {
             f.setClienteNombre(AESUtil.desencriptar(rs.getString("cliente_nombre")));
         } catch (Exception e) {}

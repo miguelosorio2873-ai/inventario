@@ -15,6 +15,10 @@ public class Factura {
     private double subtotal;
     private double impuestos;
     private double total;
+    // Bs congelado con la tasa del momento de la factura
+    private double tasaVes;
+    private double subtotalBs;
+    private double totalBs;
     // Campos calculados
     private String clienteNombre;
     // Detalle (line items)
@@ -59,6 +63,15 @@ public class Factura {
 
     public double getTotal() { return total; }
     public void setTotal(double total) { this.total = total; }
+
+    public double getTasaVes() { return tasaVes; }
+    public void setTasaVes(double tasaVes) { this.tasaVes = tasaVes; }
+
+    public double getSubtotalBs() { return subtotalBs; }
+    public void setSubtotalBs(double subtotalBs) { this.subtotalBs = subtotalBs; }
+
+    public double getTotalBs() { return totalBs; }
+    public void setTotalBs(double totalBs) { this.totalBs = totalBs; }
 
     public String getClienteNombre() { return clienteNombre; }
     public void setClienteNombre(String clienteNombre) { this.clienteNombre = clienteNombre; }
